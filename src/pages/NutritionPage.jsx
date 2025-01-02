@@ -722,8 +722,8 @@ console.log(isChangedImage)
       )}
 
       {addFood && (
-        <div className="fixed inset-0 h-full bg-black bg-opacity-50 flex flex-col items-center">
- <div className="flex w-[85vw]" style={{height:'fit-content'}} >
+        <div className="fixed inset-0 h-full bg-black bg-opacity-50 flex flex-col items-center overflow-y-scroll">
+ <div className="block md:flex w-[85vw]" style={{height:'fit-content'}} >
   {/* leftDiv */}
             <div className="mt-10 flex flex-col w-[85vw] md:w-auto flex-grow" style={{height:'fit-content'}} id="leftDiv">
                 <div className="input flex w-full items-center">
@@ -790,7 +790,7 @@ console.log(isChangedImage)
            {showFoodClick && 
            
           // rightDiv
-             <div className="bg-white w-auto flex flex-col justify-between items-end ms-5 p-8 mt-10 rounded-lg overflow-y-scroll" style={{'height':`${rightDivHeight}px`}} id="rightDiv">
+             <div className="bg-white w-auto flex flex-col justify-between items-end md:ms-5 p-8 mt-10 rounded-lg overflow-y-scroll" style={{'height':`${rightDivHeight}px`}} id="rightDiv">
              {console.log(USDACurrentDetails)}
                   <div className="w-[100%]">
                       <h1 className="font-bold">{USDACurrentDetails.food_name}</h1>
