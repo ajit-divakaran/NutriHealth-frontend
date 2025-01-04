@@ -7,9 +7,10 @@ import { faCaretDown } from "@fortawesome/free-solid-svg-icons/faCaretDown";
 import Diet from "../components/Diet";
 import { addHeaderHeight, removeProfileDiv } from "../context/ContextShare";
 import { useLocation, useNavigate } from "react-router-dom";
-import { AddSearchCacheFoodsApi, AddUSDAEditedImageApi, EditUserMealApi, FindUSDAFoodApi, GetSearchFoodsinAddrecipesApi } from "../services/allApis";
+import { AddSearchCacheFoodsApi, AddUSDAEditedImageApi, EditUserMealApi, FindUSDAFoodApi, GetSearchFoodsinAddrecipesApi, GetUserMealsOfTheDayApi } from "../services/allApis";
 import axios from "axios";
 import { serverUrl } from "../services/serverUrl";
+
 // import NutriData from "../components/NutriData";
 
 const NutritionPage = () => {
@@ -19,7 +20,16 @@ const NutritionPage = () => {
   const [type, setType] = useState("text");
   const [addFood,setaddFood] = useState(false)
   const [disableNutritionalPage, setDisableNutritionalPage] = useState(false);
-  const [currentUSDA,setCurrentUSDA] = useState({})
+  const [currentUSDA,setCurrentUSDA] = useState({
+    food_id:'',    
+    food_name:'',
+    serving:'',
+    serveUnit:'',
+    calories:1,
+    protein:1,
+    fat:1,
+    carbs:1,
+    foodimg:''})
   const [goals, setGoals] = useState({
     calories: 1,
     protein: 1,
@@ -42,6 +52,7 @@ const NutritionPage = () => {
   // const [foodimage,setFoodimage] = useState('')
 
   const [USDACurrentDetails,setUSDACurrentDetails] = useState({
+    food_id:'',
     food_name:'',
     serving:'',
     serveUnit:'',
@@ -49,7 +60,7 @@ const NutritionPage = () => {
     protein:'',
     fat:'',
     carbs:'',
-    // userId:'',
+    customServing:'',
     foodimg:''
   })
 
@@ -60,7 +71,17 @@ const NutritionPage = () => {
   // const [tempGramWeight,setTempGramWeight] = useState(null)
   // const [tempGramMeasure,setTempGramMeasure] = useState(null)
 
+// let details = {
+//   food_name:'',
+//   serving:'',
+//   serveUnit:'',
+//   calories:1,
+//   protein:1,
+//   fat:1,
+//   carbs:1,
+//   foodimg:''
 
+// }
   const handleDate = (e) => {
     const date = e.target.value;
     console.log(date.length);
@@ -119,19 +140,73 @@ const NutritionPage = () => {
     
   };
 
-  const handleMeasures = (item) =>{
-    console.log('Inside Handle Measures')
-    setIsMeasuresPresent(item)
-    // setTempGramMeasure(item[0].disseminationText)
-    // setTempGramWeight(item[0].gramWeight)
-    return `${item[0].disseminationText} (${item[0].gramWeight}g)`
-  }
+
   
 const [FDCid ,setFDCid] = useState(0)
+const calculateValues = (serving,weight) =>{
+  console.log("Weight",weight)
+  let newCalories = ''
+  let newCarbs = ''
+  let newFats = ''
+  let newProtein = ''
+  console.log(currentUSDA)
+
+    if(weight && !(currentUSDA.serveUnit=='serving') )
+    { newCalories = ((currentUSDA.calories*weight)/100).toFixed(2)
+     newCarbs = ((currentUSDA.carbs*weight)/100).toFixed(2)
+     newFats = ((currentUSDA.fat*weight)/100).toFixed(2)
+     newProtein = ((currentUSDA.protein*weight)/100).toFixed(2)}
+    
+    if(currentUSDA.serveUnit=='serving'){
+      newCalories = currentUSDA.calories*weight
+     newCarbs = currentUSDA.carbs*weight
+     newFats = currentUSDA.fat*weight
+     newProtein = currentUSDA.protein*weight
+    }
+    console.log("New cal",newCalories)
+
+
+    setUSDACurrentDetails({...USDACurrentDetails,serving:serving,calories:newCalories,carbs:newCarbs,fat:newFats,protein:newProtein,customServing:serving=='Custom'?weight:''})
+    // console.log(USDACurrentDetails)
+}
+
+const firstCalculate = (details,weight) =>{
+  console.log("Weight",weight)
+  let newCalories = ''
+  let newCarbs = ''
+  let newFats = ''
+  let newProtein = ''
+  console.log(details)
+  console.log(details.calories,weight,(details.calories*weight)/100)
+    if(weight && !(details.serveUnit=='serving') )
+    { newCalories = ((details.calories*weight)/100).toFixed(2)
+     newCarbs = ((details.carbs*weight)/100).toFixed(2)
+     newFats = ((details.fat*weight)/100).toFixed(2)
+     newProtein = ((details.protein*weight)/100).toFixed(2)}
+    
+    if(details.serveUnit=='serving'){
+      newCalories = details.calories*weight
+     newCarbs = details.carbs*weight
+     newFats = details.fat*weight
+     newProtein = details.protein*weight
+    }
+    console.log("New cal",newCalories)
+
+    setUSDACurrentDetails({food_id:details.food_id,food_name:details.food_name,serving:details.serving,customServing:'',serveUnit:details.serveUnit,calories:newCalories,carbs:newCarbs,fat:newFats,protein:newProtein,foodimg:details.foodimg})
+}
+
+const handleMeasures = (item) =>{
+  console.log('Inside Handle Measures')
+  setIsMeasuresPresent(item)
+  // setTempGramMeasure(item[0].disseminationText)
+  // setTempGramWeight(item[0].gramWeight)
+  return `${item[0].disseminationText} (${item[0].gramWeight}g)`
+}
 
   const handleFoodClick = async(item) =>{
     setShowFoodClick(true)
     setPreviewImg(null)
+    console.log(item._id?`item_id:${item._id}`:`fdcid:${item.fdcId}`)
     if(item.fdcId)
       {setFDCid(item.fdcId)
         
@@ -145,7 +220,9 @@ const [FDCid ,setFDCid] = useState(0)
     const check = isChangedImage.findIndex(x=>x.fdcId==item.fdcId)
     console.log(check)
     console.log(typeof item.protein )
-    const details = {  food_name:item.food_name?item.food_name:item.description,
+    const details = {  
+      food_id:item._id?item._id:item.fdcId,
+      food_name:item.food_name?item.food_name:item.description,
       serving:item.serving?item.serving:(item.foodMeasures.length>0?handleMeasures(item.foodMeasures):100),
       serveUnit:item.serveUnit||((item.servingSizeUnit=='GRM'?'g':(item.servingSizeUnit=='MLT'?'ml':item.servingSizeUnit))??'g'),
       
@@ -157,36 +234,25 @@ const [FDCid ,setFDCid] = useState(0)
       
       carbs: item.carbs == 0? 0: item.carbs ?? item.carbs?item.carbs:item.foodNutrients.find(x=>x.nutrientId==1005)?item.foodNutrients.filter(x=>x.nutrientId==1005)[0].value:'--',
       
-      // userId:'',
+      customServing:'',
       
-      foodimg:item.foodimg?item.foodimg:(check!== -1?`${serverUrl}/upload/${isChangedImage[check].foodimg}` :await fetchPexelsData(item.description))
+      foodimg:item.foodimg?`${serverUrl}/upload/${item.foodimg}`:(check!== -1?`${serverUrl}/upload/${isChangedImage[check].foodimg}` :await fetchPexelsData(item.description))
     }
     console.log(typeof details.serving)
     console.log(details)
-    setCurrentUSDA(details)
+   
+    
     if(typeof details.serving == 'number' || details.serving.split(' ').length==1){
       setIsMeasuresPresent(null)
       console.log("Flagged")
+      setUSDACurrentDetails(details)
     }
     else{
       console.log('Inside else')
-      console.log(typeof details.calories,details.calories,typeof item.foodMeasures[0].gramWeight,item.foodMeasures[0].gramWeight)
-      const num = details.calories
-      let cal = num*25/100
-      console.log(cal)
-      let pro = (details.protein*item.foodMeasures[0].gramWeight)/100
-      let f = (details.fat*item.foodMeasures[0].gramWeight)/100
-      let carb = (details.carbs*item.foodMeasures[0].gramWeight)/100
-      details.calories= cal
-      details.protein= pro
-      details.fat= f
-      details.carbs= carb
+      firstCalculate(details,item.foodMeasures[0].gramWeight)
     }
-    console.log(details)
-
-    setUSDACurrentDetails(details)
-    
-    console.log(item)
+    setCurrentUSDA(details) // for reference after first render of USDACurrentDetails
+   
 
   }
 
@@ -204,6 +270,7 @@ const [FDCid ,setFDCid] = useState(0)
     setInputValue('')
     setShowFoodClick(false)
     setUSDACurrentDetails({
+      food_id:'',
       food_name:'',
       serving:'',
       serveUnit:'',
@@ -222,11 +289,12 @@ const [FDCid ,setFDCid] = useState(0)
 
 
   const handleAddMeal = async() =>{
-    const {food_name,serving,serveUnit,calories,carbs,protein,fat,foodimg} = USDACurrentDetails
+    const {food_name,serving,serveUnit,calories,carbs,protein,fat,foodimg,customServing} = USDACurrentDetails
           if(!serving){
             alert("Please Enter the serving")
           }
           else{
+
           console.log('Mealtime : ',mealTime)
           const reqBody = new FormData()
           reqBody.append('food_name',food_name)
@@ -238,18 +306,19 @@ const [FDCid ,setFDCid] = useState(0)
           reqBody.append('carbs',carbs)
           reqBody.append('mealtime',mealTime)
           reqBody.append('date',userDate)
+          reqBody.append('customServing',customServing)
 
           if(foodimg instanceof File){
             console.log('Instance of file')
             reqBody.append('foodimg',foodimg)
           }
+          else{
+            reqBody.append('foodimg',foodimg)
+          }
 
           console.log(reqBody)
 
-          for (let pair of reqBody.entries()) {
-            console.log(`${pair[0]}: ${typeof pair[1]}`);
-        }
-          
+
           const token= sessionStorage.getItem('token')
           console.log(token)
             const reqHeader = {
@@ -257,7 +326,7 @@ const [FDCid ,setFDCid] = useState(0)
            "Authorization": `Bearer ${token}`,
           };
       
-          const result = await EditUserMealApi(reqBody,reqHeader)          
+          const result = await EditUserMealApi('edit',reqBody,reqHeader)          
           console.log("Edit user meal",result)
           if(result.status == 200){
               setRefreshStatus(result)
@@ -284,6 +353,7 @@ const [FDCid ,setFDCid] = useState(0)
             setInputValue('')
             setShowFoodClick(false)
             setUSDACurrentDetails({
+              food_id:'',
               food_name:'',
               serving:'',
               serveUnit:'',
@@ -306,7 +376,7 @@ const [FDCid ,setFDCid] = useState(0)
 
   }
 
-
+// const [isLoading,setIsLoading] = useState(true)
  // useeffect for api call with delay
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -410,7 +480,7 @@ const [FDCid ,setFDCid] = useState(0)
 
     // console.log(res1)
     setSearchlist(arr)
-    if(sessionStorage.getItem('token')){
+    if(sessionStorage.getItem('token') && arr.length>0){
       const token = sessionStorage.getItem('token')
       const reqHeader = {
         "Content-Type":"application/json",
@@ -433,33 +503,14 @@ const [FDCid ,setFDCid] = useState(0)
       setSearchlist([])
     }
   }
+
   const handleChange = (event) => {
     setInputValue(event.target.value);
    
   };
 
-  const calculateValues = (serving,weight) =>{
-    console.log("Weight",weight)
-    let newCalories = ''
-    let newCarbs = ''
-    let newFats = ''
-    let newProtein = ''
-      if(weight && !(currentUSDA.serveUnit=='serving') )
-      { newCalories = ((currentUSDA.calories*weight)/100).toFixed(2)
-       newCarbs = ((currentUSDA.carbs*weight)/100).toFixed(2)
-       newFats = ((currentUSDA.fat*weight)/100).toFixed(2)
-       newProtein = ((currentUSDA.protein*weight)/100).toFixed(2)}
-      
-      if(currentUSDA.serveUnit=='serving'){
-        newCalories = currentUSDA.calories*weight
-       newCarbs = currentUSDA.carbs*weight
-       newFats = currentUSDA.fat*weight
-       newProtein = currentUSDA.protein*weight
-      }
 
-      setUSDACurrentDetails({...USDACurrentDetails,serving:serving,calories:newCalories,carbs:newCarbs,fat:newFats,protein:newProtein})
-      // console.log(USDACurrentDetails)
-  }
+
  const handleSingleServingInput = (e) =>{
   setUSDACurrentDetails({...USDACurrentDetails,serving:e.target.value})
   calculateValues(e.target.value,e.target.value)
@@ -524,42 +575,53 @@ const [FDCid ,setFDCid] = useState(0)
     }
 };
 
-const getUserSetMeals=()=>{
+const getChangedImages = ()=>{
   const check = JSON.parse(sessionStorage.getItem('existingUser')).changedImages
-  // const searchedfoods = JSON.parse(sessionStorage.getItem('existingUser')).searchedfoods
-  // if(check.length && searchedfoods.length){
-  //   setIsChangedImage(check)
-  //   check.forEach(checkitem=>
-  //   {
-  //     const index = searchedfoods.findIndex(x=>x.fdcId == checkitem.fdcId)
-  //     if(index){
 
-  //       searchedfoods[index].foodimg = checkitem.foodimg
-        
-  //     }
-  //     console.log(searchedfoods)
-  //     const obj = JSON.parse(sessionStorage.getItem('existingUser'))
-  //     obj.searchedfoods = searchedfoods
-  //     sessionStorage.setItem('existingUser',JSON.stringify(obj))
-      
-  //   }
-  //   )
-  // }
   if(check){
     setIsChangedImage(check)
   }
+  
+
 }
 
 console.log(isChangedImage)
 
+const firstTimeUserMeals = async()=>{
+  const token= sessionStorage.getItem('token')
+  console.log(token)
+    const reqHeader = {
+    "Content-type": "multipart/form-data",
+   "Authorization": `Bearer ${token}`,
+  };
+  const result =  await GetUserMealsOfTheDayApi(userDate,reqHeader)
+  console.log(result.data)
+  if(result.status == 200){
+    sessionStorage.setItem('UsermealsToday',JSON.stringify(result.data))
+    setUserMeals(result.data)
+  }
+  else{
+    setUserMeals([])
+  }
+}
 
+useEffect(()=>{
+  firstTimeUserMeals()
+},[userDate])
+
+const [userMeals,setUserMeals] = useState({})
 //main useEffect
   useEffect(() => {
     if (sessionStorage.getItem("token")) {
       console.log("Inside Nutrition page");
       getGoals();
-      getUserSetMeals()
+      getChangedImages()
       adjustRightDivHeight();
+      const data = JSON.parse(sessionStorage.getItem("UsermealsToday"))
+      if(data){
+        console.log(data)
+        setUserMeals(data)
+      }
       window.addEventListener("resize", adjustRightDivHeight);
     
     
@@ -573,9 +635,11 @@ console.log(isChangedImage)
  
   }, [refreshStatus]);
   return (
+    
     <div className="h-auto">
       <Header color={"#d7cfbf"} />
       {console.log(USDACurrentDetails)}
+      {console.log(searchInnateList)}
 
       {!disableNutritionalPage ? (
         <div
@@ -695,12 +759,12 @@ console.log(isChangedImage)
               className=" w-[30vw] "
             />
           </div> */}
-
-            <div className="added-meals w-100 mt-[5rem] grid grid-cols-1 md:grid-cols-3 gap-x-[3rem]">
-              <Diet setaddFood = {setaddFood} setMealTime={setMealTime} head={"Breakfast"} />
-              <Diet setaddFood = {setaddFood} head={"Lunch"} setMealTime={setMealTime}/>
-              <Diet setaddFood = {setaddFood} head={"Dinner"} setMealTime={setMealTime} />
-              <Diet setaddFood = {setaddFood} head={"Snacks"} setMealTime={setMealTime} />
+          {console.log(userMeals)}
+         <div className="added-meals w-100 mt-[5rem] grid grid-cols-1 md:grid-cols-3 gap-x-[3rem]">
+              <Diet setaddFood = {setaddFood} setMealTime={setMealTime} userMeals={userMeals.breakfast??[]} head={"Breakfast"} />
+              <Diet setaddFood = {setaddFood} head={"Lunch"}  userMeals={userMeals.lunch??[]} setMealTime={setMealTime}/>
+              <Diet setaddFood = {setaddFood} head={"Dinner"}  userMeals={userMeals.dinner??[]} setMealTime={setMealTime} />
+              <Diet setaddFood = {setaddFood} head={"Snacks"}  userMeals={userMeals.snacks??[]} setMealTime={setMealTime} />
             </div>
           </div>
         </div>
@@ -904,8 +968,8 @@ console.log(isChangedImage)
 
                         <div className="flex items-center mt-2 ">
                           {console.log(previewImg)}
-                      { searchInnateList.filter(x=>x.foodimg==USDACurrentDetails.foodimg).length>0? 
-                            
+                      {/* { searchInnateList.filter(x=>x.foodimg==USDACurrentDetails.foodimg.startsWith()).length>0?  */}
+                       {   !(USDACurrentDetails.foodimg instanceof File) && USDACurrentDetails.foodimg.startsWith(serverUrl) ? 
                             <img src={USDACurrentDetails.foodimg.split('-')[0]=='image'?`${serverUrl}/upload/${USDACurrentDetails.foodimg}`:USDACurrentDetails.foodimg} width='100%' alt="" id="fimage" style={{height:'150px'}}/>
                             // {console.log(`${serverUrl}/upload/${USDACurrentDetails.foodimg}`)}
                           : 
