@@ -6,7 +6,8 @@
   font-weight: 400;
   font-style: normal;
   --bs-font:1.8rem;
-  --p-content:20px
+  --p-content:20px;
+  --w-bar:0%
   /* background-color: #C7BFCC; */
 }
 
@@ -91,4 +92,17 @@ box-shadow: 0px -37px 73px -31px rgb(43, 43, 43);
 
 .date-element::placeholder{
  color:white;
+}
+
+.animated-bar{
+  animation: slide 1s 1s ease-in-out ;
+}
+
+@keyframes slide {
+from{
+  width:0%
+}
+to{
+  width:var(--w-bar)
+}
 }

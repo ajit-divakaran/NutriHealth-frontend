@@ -6,10 +6,11 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCaretDown } from "@fortawesome/free-solid-svg-icons/faCaretDown";
 import Diet from "../components/Diet";
 import { addHeaderHeight, removeProfileDiv } from "../context/ContextShare";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { AddSearchCacheFoodsApi, AddUSDAEditedImageApi, EditUserMealApi, FindUSDAFoodApi, GetSearchFoodsinAddrecipesApi, GetUserMealsOfTheDayApi } from "../services/allApis";
 import axios from "axios";
 import { serverUrl } from "../services/serverUrl";
+import { toast, ToastContainer } from "react-toastify";
 
 // import NutriData from "../components/NutriData";
 
@@ -68,20 +69,7 @@ const NutritionPage = () => {
 
   const [refreshStatus,setRefreshStatus] = useState({})
   const [mealTime,setMealTime] = useState('')
-  // const [tempGramWeight,setTempGramWeight] = useState(null)
-  // const [tempGramMeasure,setTempGramMeasure] = useState(null)
 
-// let details = {
-//   food_name:'',
-//   serving:'',
-//   serveUnit:'',
-//   calories:1,
-//   protein:1,
-//   fat:1,
-//   carbs:1,
-//   foodimg:''
-
-// }
   const handleDate = (e) => {
     const date = e.target.value;
     console.log(date.length);
@@ -286,17 +274,20 @@ const handleMeasures = (item) =>{
 
   console.log(USDACurrentDetails)
 
-
+  const [animation,setAnimation] = useState(false)
 
   const handleAddMeal = async() =>{
-    const {food_name,serving,serveUnit,calories,carbs,protein,fat,foodimg,customServing} = USDACurrentDetails
-          if(!serving){
+    setAnimation(false)
+    const {food_id,food_name,serving,serveUnit,calories,carbs,protein,fat,foodimg,customServing} = USDACurrentDetails
+          if((serving=='Custom'&& !customServing) || (serving!='Custom' && !serving)){
             alert("Please Enter the serving")
           }
           else{
 
           console.log('Mealtime : ',mealTime)
+          console.log('food id:',food_id)
           const reqBody = new FormData()
+          reqBody.append('food_id',food_id)
           reqBody.append('food_name',food_name)
           reqBody.append('calories',calories)
           reqBody.append('serving',serving)
@@ -330,7 +321,10 @@ const handleMeasures = (item) =>{
           console.log("Edit user meal",result)
           if(result.status == 200){
               setRefreshStatus(result)
+              // toast.success(`Added meal to ${mealTime}`)
+              alert('Added meal successfully')
               sessionStorage.setItem('UsermealsToday',JSON.stringify(result.data))
+              setUserMeals(JSON.parse(sessionStorage.getItem('UsermealsToday')))
               console.log("Preview image",previewImg)
               if(previewImg)
                 {
@@ -364,9 +358,30 @@ const handleMeasures = (item) =>{
               foodimg:''
             })
               setaddFood(false)
+              setAnimation(true)
 
 
 
+          }
+          else{
+            alert('Oops something went wrong')
+            setSearchInnateList([])
+            setSearchlist([])
+            setInputValue('')
+            setShowFoodClick(false)
+            setUSDACurrentDetails({
+              food_id:'',
+              food_name:'',
+              serving:'',
+              serveUnit:'',
+              calories:'',
+              protein:'',
+              fat:'',
+              carbs:'',
+              foodimg:''
+            })
+              setaddFood(false)
+              setAnimation(true)
           }
 
 
@@ -376,7 +391,7 @@ const handleMeasures = (item) =>{
 
   }
 
-// const [isLoading,setIsLoading] = useState(true)
+const [isLoading,setIsLoading] = useState(true)
  // useeffect for api call with delay
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -397,6 +412,7 @@ const handleMeasures = (item) =>{
     console.log("api call",val);
     setPreviewImg(null)
     if(val.length){
+      setIsLoading(true)
     const pro1 = await GetSearchFoodsinAddrecipesApi(val)
     console.log(pro1.data)
     setSearchInnateList(pro1.data)
@@ -468,6 +484,10 @@ const handleMeasures = (item) =>{
 
     console.log(Branded,SRLegacy,Survey,Foundation)
     const arr = [...Branded,...SRLegacy,...Survey,...Foundation]
+    if(arr.length>=0){
+      setIsLoading(false) 
+      console.log('Loading done')
+    }
     console.log(arr)
     // const res1 = item.foods.sort((a,b)=> a.finalFoodInputFoods.length - b.finalFoodInputFoods.length ).filter(x => 
     //   { 
@@ -480,6 +500,7 @@ const handleMeasures = (item) =>{
 
     // console.log(res1)
     setSearchlist(arr)
+   
     if(sessionStorage.getItem('token') && arr.length>0){
       const token = sessionStorage.getItem('token')
       const reqHeader = {
@@ -496,12 +517,16 @@ const handleMeasures = (item) =>{
     const res = data[val]
     console.log(res)
     setSearchlist(res)
+    setIsLoading(false)
   }
+
   }
     else{
       setSearchInnateList([])
       setSearchlist([])
+      setIsLoading(false)
     }
+    
   }
 
   const handleChange = (event) => {
@@ -602,11 +627,53 @@ const firstTimeUserMeals = async()=>{
   }
   else{
     setUserMeals([])
+    const data = sessionStorage.getItem('UsermealsToday')
+    // const data1 = sessionS
+    if(data){
+      sessionStorage.removeItem('UsermealsToday')
+    }
   }
+  // setTimeout(()=>getCurrentGoalValues(),1000)
+  getCurrentGoalValues()
+  setAnimation(true)
 }
 
+const getCurrentGoalValues = () =>{
+  const data = sessionStorage.getItem('UsermealsToday')
+  console.log(data)
+  let calories = 0;
+  let protein = 0;
+  let fats = 0;
+  let carbs = 0;
+  let arr = JSON.parse(data)
+  if(arr){ 
+   
+  for(let x in arr){
+    if(x=='breakfast' || x=='dinner' || x=='snacks' || x=='lunch'){
+      arr[x].forEach(p=>{
+        calories += p.calories!=='--'?p.calories*1:0;
+        protein += p.protein!=='--'?p.protein*1:0;
+        fats += p.fat!=='--'?p.fat*1:0;
+        carbs += p.carbs!=='--'?p.carbs*1:0;
+
+      })
+      }  
+    }
+  }
+    let objdata = {calories:calories.toFixed(2)*1,protein:protein.toFixed(2)*1,fats:fats.toFixed(2)*1,carbs:carbs.toFixed(2)*1}
+    sessionStorage.setItem('usernutrition',JSON.stringify(objdata))
+    console.log('calories',calories)
+    console.log('protein',protein)
+    console.log('fats',fats)
+    console.log('carbs',carbs)
+
+  }
+
+
 useEffect(()=>{
+  setAnimation(false)
   firstTimeUserMeals()
+ 
 },[userDate])
 
 const [userMeals,setUserMeals] = useState({})
@@ -615,12 +682,15 @@ const [userMeals,setUserMeals] = useState({})
     if (sessionStorage.getItem("token")) {
       console.log("Inside Nutrition page");
       getGoals();
+      getCurrentGoalValues()
       getChangedImages()
       adjustRightDivHeight();
-      const data = JSON.parse(sessionStorage.getItem("UsermealsToday"))
+      let data = sessionStorage.getItem("UsermealsToday")
       if(data){
+        data = JSON.parse(sessionStorage.getItem("UsermealsToday"))
         console.log(data)
         setUserMeals(data)
+        setAnimation(true)
       }
       window.addEventListener("resize", adjustRightDivHeight);
     
@@ -667,6 +737,7 @@ const [userMeals,setUserMeals] = useState({})
                         : " w-[40%] md:w-[100%] text-black bg-slate-200"
                     } text-[3.5vw] md:text-sm m-0 date-element bg-transparent `}
                     id="date"
+                    max={new Date().toISOString().split('T')[0]}
                   />
                   {type == "text" && (
                     <FontAwesomeIcon
@@ -696,25 +767,25 @@ const [userMeals,setUserMeals] = useState({})
                   <p className="text-lg italic">Calories</p>
                   <p className="text-lg ">{goals.calories}kcal</p>
                 </div>
-                <StatusBar small={true} curr={1580} total={goals.calories} />
+                <StatusBar animation={animation} small={true} curr={JSON.parse(sessionStorage.getItem('usernutrition')).calories} total={goals.calories} />
                 <div style={{ height: "10px" }}></div>
                 <div className="flex justify-between mb-1 ">
                   <p className="text-lg italic">Protein</p>
                   <p className="text-lg">20g</p>
                 </div>
-                <StatusBar small={true} curr={20} total={goals.protein} />
+                <StatusBar animation={animation} small={true} curr={JSON.parse(sessionStorage.getItem('usernutrition')).protein} total={goals.protein} />
                 <div style={{ height: "10px" }}></div>
                 <div className="flex justify-between mb-1">
                   <p className="text-lg italic">Carbs</p>
                   <p className="text-lg">80g</p>
                 </div>
-                <StatusBar small={true} curr={100} total={goals.carbs} />
+                <StatusBar animation={animation} small={true} curr={JSON.parse(sessionStorage.getItem('usernutrition')).carbs} total={goals.carbs} />
                 <div style={{ height: "10px" }}></div>
                 <div className="flex justify-between mb-1">
                   <p className="text-lg italic">Fats</p>
                   <p className="text-lg">2g</p>
                 </div>
-                <StatusBar small={true} curr={2} total={goals.fats} />
+                <StatusBar animation={animation} small={true} curr={JSON.parse(sessionStorage.getItem('usernutrition')).fats} total={goals.fats} />
                 <div style={{ height: "10px" }}></div>
               </div>
 
@@ -723,7 +794,7 @@ const [userMeals,setUserMeals] = useState({})
                 <h1 className="text-[3.75vw] mb-3">
                   1580<span className="text-lg ms-1">kcal</span>
                 </h1>
-                <StatusBar curr={1580} total={goals.calories} />
+                <StatusBar animation={animation} curr={JSON.parse(sessionStorage.getItem('usernutrition')).calories} total={goals.calories} />
                 <p className="float-end text-[1vw] mt-2">
                   {goals.calories}kcal
                 </p>
@@ -733,19 +804,19 @@ const [userMeals,setUserMeals] = useState({})
                   <p className="text-sm">Protein</p>
                   <p className="text-sm">20g</p>
                 </div>
-                <StatusBar small={true} curr={20} total={goals.protein} />
+                <StatusBar animation={animation} small={true} curr={JSON.parse(sessionStorage.getItem('usernutrition')).protein} total={goals.protein} />
                 <div style={{ height: "10px" }}></div>
                 <div className="flex justify-between mb-1">
                   <p className="text-sm">Carbs</p>
                   <p className="text-sm">80g</p>
                 </div>
-                <StatusBar small={true} curr={100} total={goals.carbs} />
+                <StatusBar animation={animation} small={true} curr={JSON.parse(sessionStorage.getItem('usernutrition')).carbs} total={goals.carbs} />
                 <div style={{ height: "10px" }}></div>
                 <div className="flex justify-between mb-1">
                   <p className="text-sm">Fats</p>
                   <p className="text-sm">2g</p>
                 </div>
-                <StatusBar small={true} curr={2} total={goals.fats} />
+                <StatusBar animation={animation} small={true} curr={JSON.parse(sessionStorage.getItem('usernutrition')).fats} total={goals.fats} />
                 <div style={{ height: "10px" }}></div>
               </div>
             </div>
@@ -761,10 +832,10 @@ const [userMeals,setUserMeals] = useState({})
           </div> */}
           {console.log(userMeals)}
          <div className="added-meals w-100 mt-[5rem] grid grid-cols-1 md:grid-cols-3 gap-x-[3rem]">
-              <Diet setaddFood = {setaddFood} setMealTime={setMealTime} userMeals={userMeals.breakfast??[]} head={"Breakfast"} />
-              <Diet setaddFood = {setaddFood} head={"Lunch"}  userMeals={userMeals.lunch??[]} setMealTime={setMealTime}/>
-              <Diet setaddFood = {setaddFood} head={"Dinner"}  userMeals={userMeals.dinner??[]} setMealTime={setMealTime} />
-              <Diet setaddFood = {setaddFood} head={"Snacks"}  userMeals={userMeals.snacks??[]} setMealTime={setMealTime} />
+              <Diet setAnimation = {setAnimation} setaddFood = {setaddFood} setRefreshStatus={setRefreshStatus} setMealTime={setMealTime} userMeals={userMeals.breakfast??[]} head={"Breakfast"} />
+              <Diet setAnimation = {setAnimation} setaddFood = {setaddFood} setRefreshStatus={setRefreshStatus} head={"Lunch"}  userMeals={userMeals.lunch??[]} setMealTime={setMealTime}/>
+              <Diet setAnimation = {setAnimation} setaddFood = {setaddFood} setRefreshStatus={setRefreshStatus} head={"Dinner"}  userMeals={userMeals.dinner??[]} setMealTime={setMealTime} />
+              <Diet setAnimation = {setAnimation} setaddFood = {setaddFood} setRefreshStatus={setRefreshStatus} head={"Snacks"}  userMeals={userMeals.snacks??[]} setMealTime={setMealTime} />
             </div>
           </div>
         </div>
@@ -824,9 +895,14 @@ const [userMeals,setUserMeals] = useState({})
                   ))}
               </>:<h3>No user foods found</h3>)
                 :<h3 className="text-slate-500">Type on search to search foods</h3>}
+                {isLoading && <div className="flex justify-center w-100"><img src="./images/spinning-dots.svg" alt="" className="w-[32px] m-0 p-0 -mb-3 me-3"/></div>}
                 {searchlist?.length>0 && 
                 <>
-                  <h3 className="mt-4 text-slate-400 font-thin">USDA</h3>
+                  <div className="flex justify-between  ">
+                    <h3 className="mt-4 text-slate-400 font-thin">USDA</h3>
+                    
+
+                  </div>
                 <hr className="mb-3"/>
                 
                 {searchlist.map((item,id)=>(<div key={id}className="fitem border-b-[2px] py-2" onClick={()=>handleFoodClick(item)}>
@@ -912,14 +988,14 @@ const [userMeals,setUserMeals] = useState({})
             
                   </div>
 
-                  <div className="flex  items-center mt-2 ">
+                  <div className="flex  items-center mt-2 w-[100%] ">
                           
-                          <span className="w-[20%] text-sm me-1">Calories:</span>
+                          <span className="w-[20%] text-sm">Calories:</span>
                        
                             <input
                               type="number"
                               placeholder="Calories"
-                              className=" px-1 py-2 w-[80%] border border-slate-100 ms-1 ps-3 rounded-md focus:bg-slate-300 text-sm"
+                              className=" px-1 py-2 w-[80%] border border-slate-100 ps-3 rounded-md focus:bg-slate-300 text-sm"
                               value={USDACurrentDetails.calories}  
                               disabled                          // onChange={(e)=>{setUserRecipeData({...userRecipeData,carbs:e.target.value})}}
                             />
@@ -982,7 +1058,7 @@ const [userMeals,setUserMeals] = useState({})
 
                   </div>
         
-                  <div className="flex">
+                  <div className="flex mt-3">
       
                         <button className="px-4 py-2 rounded bg-slate-200 border border-black me-3 mb-3" onClick={handleAddMeal}>Add</button>
                         <button className="px-4 py-2 rounded bg-slate-200 border border-black me-3 mb-3" onClick={handleFoodClose}>Close</button>
@@ -999,6 +1075,7 @@ const [userMeals,setUserMeals] = useState({})
 
         </div>
       )}
+    <ToastContainer theme='dark' position="top-center" autoClose={2000} />
     </div>
   );
 };

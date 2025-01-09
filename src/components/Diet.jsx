@@ -3,25 +3,58 @@ import { faCross } from '@fortawesome/free-solid-svg-icons/faCross'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { useEffect, useState } from 'react'
 import { EditUserMealApi } from '../services/allApis'
+import { ToastContainer, toast } from 'react-toastify';
 
 
-const Diet = ({setaddFood,setMealTime,userMeals,head}) => {
+const Diet = ({setAnimation,setaddFood,setRefreshStatus,setMealTime,userMeals,head}) => {
+    // const [userDietMeals,setUserDietMeals] = useState(userMeals)
     const handleAdd = () =>{
         setaddFood(true)
         let mealtime = head.charAt(0).toLowerCase() + head.slice(1)
         console.log(mealtime)
         setMealTime(mealtime)
+        // userMeals = JSON.parse(sessionStorage.getItem('UsermealsToday'))[mealtime]
+        // setUserDietMeals()
+
     }
 
-    const handleMealItemClose =() =>{
-        const reqBody={}
+    const handleMealItemClose =async(item) =>{
+        setAnimation(false)
+        let mealtime = head.charAt(0).toLowerCase() + head.slice(1)
+        console.log(mealtime)
+        setMealTime(mealtime)
+        const reqBody={...item}
+        console.log(reqBody)
+        const token= sessionStorage.getItem('token')
+        const reqHeader = {
+            "Content-type": "multipart/form-data",
+           "Authorization": `Bearer ${token}`,
+          }
         console.log('Deleted successfully')
-        // const result = await EditUserMealApi('delete',reqBody,reqHeader)
+        const result = await EditUserMealApi('delete',reqBody,reqHeader)
+        if(result.status == 200 && result.data){
+        // toast.info('Deleted meal successfully')
+        // alert('User meal deleted sucessfully')
+            sessionStorage.setItem('UsermealsToday',JSON.stringify(result.data))
+            console.log(result.data)
+            setRefreshStatus(result.data)
+            setAnimation(true)
+            // setUserDietMeals(result.data)
+            
+        }
+        else{
+            // toast.error(result.data)
+            alert(result.data)
+            setAnimation(true)
+
+        }
     }
 
     // useEffect(()=>{
-    //     const data = JSON.parse(sessionStorage.getItem(existingUser))
-    // },[])
+    //     let mealtime = head.charAt(0).toLowerCase() + head.slice(1)
+    //     userMeals = JSON.parse(sessionStorage.getItem('UsermealsToday'))[mealtime]
+
+    // },[userDietMeals])
   return (
     <div className='mb-[4rem]'>
         
@@ -32,7 +65,7 @@ const Diet = ({setaddFood,setMealTime,userMeals,head}) => {
         </div>
         
         {console.log(userMeals)}
-           {userMeals.length>0 && 
+           {userMeals?.length>0 && 
          ( userMeals.map((item,index)=>(
 
             <div key={index} className="flex meal mb-1 bg-[#b9aa87] rounded-lg py-2 px-4 justify-between w-[90vw] md:w-[100%]">
@@ -41,7 +74,7 @@ const Diet = ({setaddFood,setMealTime,userMeals,head}) => {
                     <h6>{item.customServing?item.customServing:item.serving} {!(item.serving.includes('(')) && item.serveUnit}</h6>
                 </div>
                 <div>
-                    <h6>{item.calories*1} kcal<FontAwesomeIcon icon={faMultiply} className='ms-3'onClick={handleMealItemClose}/></h6>
+                    <h6>{item.calories*1} kcal<FontAwesomeIcon icon={faMultiply} className='ms-3'onClick={()=>handleMealItemClose(item)}/></h6>
                 </div>
             </div>
          )) )}
@@ -54,6 +87,7 @@ const Diet = ({setaddFood,setMealTime,userMeals,head}) => {
                     <h6>100kcal<FontAwesomeIcon icon={faMultiply} className='ms-3'/></h6>
                 </div>
             </div> */}
+             <ToastContainer theme='dark' position="top-center" autoClose={2000} />
         
     </div>
   )
