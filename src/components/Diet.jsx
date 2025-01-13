@@ -8,6 +8,7 @@ import { ToastContainer, toast } from 'react-toastify';
 
 const Diet = ({setAnimation,setaddFood,setRefreshStatus,setMealTime,userMeals,head}) => {
     // const [userDietMeals,setUserDietMeals] = useState(userMeals)
+    const [quantity,setQuantity] = useState(1)
     const [editOpen, setEditOpen] = useState(false)
     const handleAdd = () =>{
         setaddFood(true)
@@ -55,6 +56,15 @@ const Diet = ({setAnimation,setaddFood,setRefreshStatus,setMealTime,userMeals,he
         setEditOpen(true)
     }
 
+    const calculateNutrition = () =>{
+        console.log('Calculate nutrition')
+    }
+    const handleQuantity = (e) =>{
+        const input = e.target.value
+        setQuantity(input)
+        calculateNutrition()
+    }
+
     // useEffect(()=>{
     //     let mealtime = head.charAt(0).toLowerCase() + head.slice(1)
     //     userMeals = JSON.parse(sessionStorage.getItem('UsermealsToday'))[mealtime]
@@ -75,12 +85,15 @@ const Diet = ({setAnimation,setaddFood,setRefreshStatus,setMealTime,userMeals,he
              ( userMeals.map((item,index)=>(
     
                 <div key={index} onClick={()=>handleClick(item)} className="flex meal mb-1 bg-[#b9aa87] rounded-lg py-2 px-4 justify-between w-[90vw] md:w-[100%]">
-                    <div>
+                    <div className=''>
                         <p>{item.food_name}</p>
-                        <h6>{item.customServing?item.customServing:item.serving} {!(item.serving.includes('(')) && item.serveUnit}</h6>
+                        <h6 className='my-2'><input type="number" name="" id="" className='w-1/4 bg-white bg-opacity-[0.5] rounded' onChange={handleQuantity} value={quantity}/> x {item.customServing?item.customServing:item.serving} {!(item.serving.includes('(')) && item.serveUnit}</h6>
                     </div>
                     <div>
-                        <h6>{item.calories*1} kcal<FontAwesomeIcon icon={faMultiply} className='ms-3'onClick={()=>handleMealItemClose(item)}/></h6>
+                        <h6>{item.calories*1} kcal</h6>
+                    </div>
+                    <div>
+                    <FontAwesomeIcon icon={faMultiply} className='ms-3'onClick={()=>handleMealItemClose(item)}/>
                     </div>
                 </div>
              )) )}
@@ -96,12 +109,12 @@ const Diet = ({setAnimation,setaddFood,setRefreshStatus,setMealTime,userMeals,he
                  <ToastContainer theme='dark' position="top-center" autoClose={2000} />
             
         </div>
-        {editOpen && <div className='fixed inset-0 h-full bg-black bg-opacity-50 flex justify-center'>
+        {/* {editOpen && <div className='fixed inset-0 h-full bg-black bg-opacity-50 flex justify-center'>
 <div>
                 <h1 className='text-center bg-slate-200 text-black w-1/2 p-5'>Hello</h1>
                 <button className='border border-white border-w-[2px] text-white px-4 py-3 rounded hover:bg-white hover:text-black' onClick={()=>setEditOpen(false)}>Close</button>
     
-</div>            </div>}
+</div>            </div>} */}
     </>
   )
 }

@@ -476,7 +476,7 @@ const [isLoading,setIsLoading] = useState(true)
           // || words.includes(inputValue) 
           // || words.includes(capitalizedVal)
         })
-          .sort((a,b)=> a.ingredients.length - b.ingredients.length )
+          .sort((a,b)=> a.description.length - b.description.length )
           .slice(0,4)
           :Branded;
     // const Brand1 = res[0].data.foods.length>10?res[0].data.foods.slice(0,10):res[0].data.foods;
@@ -496,7 +496,7 @@ const [isLoading,setIsLoading] = useState(true)
         // || words.includes(inputValue) 
         // || words.includes(capitalizedVal)
       })
-    // .sort((a,b)=> a.ingredients.length - b.ingredients.length )
+    // .sort((a,b)=> a.description.length - b.description.length )
     .slice(0,6)
     :SRLegacy;
      Survey = Survey.length>3?Survey
@@ -516,7 +516,7 @@ const [isLoading,setIsLoading] = useState(true)
         // || words.includes(inputValue) 
         // || words.includes(capitalizedVal)
       })
-      // .sort((a,b)=> a.ingredients.length - b.ingredients.length )
+      // .sort((a,b)=> a.description.length - b.description.length )
       .slice(0,3)
     :Survey;
      Foundation = Foundation.length>10?Foundation
