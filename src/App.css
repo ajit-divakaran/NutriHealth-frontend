@@ -95,8 +95,15 @@ box-shadow: 0px -37px 73px -31px rgb(43, 43, 43);
 }
 
 .animated-bar{
-  animation: slide 1s 1s ease-in-out ;
+  width: var(--w-bar);
+  animation: slide 1s ease-in-out ;
 }
+
+/* .animated-current{
+  margin-left:calc(var(--w-bar)) ;
+  transform:translateX(-50%);
+  animation: drag 1s ease-in-out
+} */
 
 @keyframes slide {
 from{
@@ -106,3 +113,12 @@ to{
   width:var(--w-bar)
 }
 }
+
+/* @keyframes drag {
+from{
+  margin-left:0%
+}
+to{
+  margin-left:var(--w-bar);
+}
+} */

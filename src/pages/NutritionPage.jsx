@@ -1,4 +1,4 @@
-  import { useContext, useEffect, useRef, useState } from "react";
+  import { useContext, useEffect,  useState } from "react";
 import Header from "../components/Header";
 import StatusBar from "../components/StatusBar";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -208,19 +208,20 @@ const handleMeasures = (item) =>{
     const check = isChangedImage.findIndex(x=>x.fdcId==item.fdcId)
     console.log(check)
     console.log(typeof item.protein )
+
     const details = {  
       food_id:item._id?item._id:item.fdcId,
       food_name:item.food_name?item.food_name:item.description,
       serving:item.serving?item.serving:(item.foodMeasures.length>0?handleMeasures(item.foodMeasures):100),
       serveUnit:item.serveUnit||((item.servingSizeUnit=='GRM'?'g':(item.servingSizeUnit=='MLT'?'ml':item.servingSizeUnit))??'g'),
       
-      calories: item.calories == 0 ? 0: item.calories ??item.calories?item.calories: item.foodNutrients.find(x=>x.nutrientId==1008 || x.nutrientId==2047)?((item.servingSize)?item.servingSize:item.foodNutrients.filter(x=>x.nutrientId==1008||x.nutrientId==2047)[0].value):'--',
+      calories: item.calories == 0 ? 0: item.calories ?? (item.foodNutrients.find(x=>x.nutrientId==1008 || x.nutrientId==2047)?item.foodNutrients.filter(x=>x.nutrientId==1008||x.nutrientId==2047)[0].value:'--'),
       
-      protein: item.protein == 0 ? 0 :item.protein  ?? item.protein?item.protein:item.foodNutrients.find(x=>x.nutrientId==1003)?item.foodNutrients.filter(x=>x.nutrientId==1003)[0].value:'--',
+      protein: item.protein == 0 ? 0 :item.protein  ??(item.foodNutrients.find(x=>x.nutrientId==1003)?item.foodNutrients.filter(x=>x.nutrientId==1003)[0].value:'--'),
       
-      fat: item.fat == 0 ? 0: item.fat ?? item.fat?item.fat: item.foodNutrients.find(x=>x.nutrientId==1004)?item.foodNutrients.filter(x=>x.nutrientId==1004)[0].value:'--',
+      fat: item.fat == 0 ? 0: item.fat ?? (item.foodNutrients.find(x=>x.nutrientId==1004)?item.foodNutrients.filter(x=>x.nutrientId==1004)[0].value:'--'),
       
-      carbs: item.carbs == 0? 0: item.carbs ?? item.carbs?item.carbs:item.foodNutrients.find(x=>x.nutrientId==1005)?item.foodNutrients.filter(x=>x.nutrientId==1005)[0].value:'--',
+      carbs: item.carbs == 0? 0: item.carbs ?? (item.foodNutrients.find(x=>x.nutrientId==1005)?item.foodNutrients.filter(x=>x.nutrientId==1005)[0].value:'--'),
       
       customServing:'',
       
@@ -419,67 +420,125 @@ const [isLoading,setIsLoading] = useState(true)
     const data = JSON.parse(sessionStorage.getItem('existingUser')).searchedfoods
     console.log(data)
     if(!data || !data[val]){
-    const dataTypes = ['Branded', 'SR Legacy', 'Survey (FNDDS)', 'Foundation'];
+    // const dataTypes = ['Branded', 'SR Legacy', 'Survey (FNDDS)', 'Foundation'];
+    // const res = await Promise.all(dataTypes.map(type=>FindUSDAFoodApi(type,inputValue))) 
+      console.log('Inside new Api call')
+    let Branded =[]
+    let Foundation = []
+    let SRLegacy = []
+    let Survey = []
     console.log("Input",inputValue)
-    const res = await Promise.all(dataTypes.map(type=>FindUSDAFoodApi(type,inputValue))) 
-    
-    // const pro = await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?query=${val}&pageSize=50&sortBy=lowercaseDescription.keyword&sortOrder=asc&api_key=${apikey}`)
-    // const res = await pro.json()
-    console.log(res)
-    const Branded = res[0].data.foods.length>10?res[0].data.foods
+    const apidata = await FindUSDAFoodApi('Foundation',inputValue);
+   (apidata.data.foods.length)>0 && Foundation.push(...apidata.data.foods)
+   console.log(Foundation)
+
+   if(apidata.data.aggregations.dataType.hasOwnProperty('SR Legacy')){
+    console.log('Inside SR Legacy')
+      const res1 = await FindUSDAFoodApi('SR Legacy',inputValue)
+    console.log(res1.data);
+    (res1.data.foods.length)>0 && SRLegacy.push(...res1.data.foods)
+   }
+   if(apidata.data.aggregations.dataType.hasOwnProperty('Survey (FNDDS)')){
+    console.log('Inside Survey (FNDDS)')
+      const res2 = await FindUSDAFoodApi('Survey (FNDDS)',inputValue)
+    console.log(res2.data);
+   (res2.data.foods.length)>0 && Survey.push(...res2.data.foods)
+   }
+   if(apidata.data.aggregations.dataType.hasOwnProperty('Branded')){
+    console.log('Inside Branded')
+      const res3 = await FindUSDAFoodApi('Branded',inputValue)
+    console.log(res3.data);
+    (res3.data.foods.length)>0 && Survey.push(...res3.data.foods)
+   }
+    // 1.foundation
+    // 2.SR legacy
+    // 3.Survey (FNDDS)
+    // 4. branded
+
+    console.log(Branded,Survey,Foundation,SRLegacy)
+
+  Branded = Branded.length>10?Branded
     
     .filter(x => 
         { 
-          const words = x.description.split(" "); 
-          const upperVal = val.toUpperCase(); 
-          const capitalizedVal = val.charAt(0).toUpperCase() + val.slice(1); 
-          return words.includes(upperVal) 
-          || words.includes(val) 
-          || words.includes(capitalizedVal)
+          const words = x.description.match(new RegExp(inputValue,'i')); 
+          const arr = inputValue.split(" ")
+          
+          if(arr.length>1){
+            for(let item in arr){
+            if(x.description.match(new RegExp(item,'i'))){
+              return true
+            }
+          }}
+          // const upperVal = inputValue.toUpperCase(); 
+          // const capitalizedVal = inputValue.charAt(0).toUpperCase() + inputValue.slice(1); 
+          return words
+          // || words.includes(inputValue) 
+          // || words.includes(capitalizedVal)
         })
           .sort((a,b)=> a.ingredients.length - b.ingredients.length )
           .slice(0,4)
-          :res[0].data.foods;
+          :Branded;
     // const Brand1 = res[0].data.foods.length>10?res[0].data.foods.slice(0,10):res[0].data.foods;
-    const SRLegacy = res[1].data.foods.length>5?res[1].data.foods
+     SRLegacy = SRLegacy.length>5?SRLegacy
     .filter(x => 
       { 
-        const words = x.description.split(" "); 
-        const upperVal = val.toUpperCase(); 
-        const capitalizedVal = val.charAt(0).toUpperCase() + val.slice(1); 
-        return words.includes(upperVal) 
-        || words.includes(val) 
-        || words.includes(capitalizedVal)
+        const words = x.description.match(new RegExp(inputValue,'i')); 
+        const arr = inputValue.split(" ")
+        if(arr.length>1){
+          for(let item in arr){
+          if(x.description.match(new RegExp(item,'i'))){
+            return true
+          }
+        }}
+        // const capitalizedVal = inputValue.charAt(0).toUpperCase() + inputValue.slice(1); 
+        return words
+        // || words.includes(inputValue) 
+        // || words.includes(capitalizedVal)
       })
     // .sort((a,b)=> a.ingredients.length - b.ingredients.length )
     .slice(0,6)
-    :res[1].data.foods;
-    const Survey = res[2].data.foods.length>3?res[2].data.foods
+    :SRLegacy;
+     Survey = Survey.length>3?Survey
     .filter(x => 
       { 
-        const words = x.description.split(" "); 
-        const upperVal = val.toUpperCase(); 
-        const capitalizedVal = val.charAt(0).toUpperCase() + val.slice(1); 
-        return words.includes(upperVal) 
-        || words.includes(val) 
-        || words.includes(capitalizedVal)
+        const words = x.description.match(new RegExp(inputValue,'i')); 
+        const arr = inputValue.split(" ")
+        if(arr.length>1){
+          for(let item in arr){
+          if(x.description.match(new RegExp(item,'i'))){
+            return true
+          }
+        }}
+        // const upperVal = inputValue.toUpperCase(); 
+        // const capitalizedVal = inputValue.charAt(0).toUpperCase() + inputValue.slice(1); 
+        return words
+        // || words.includes(inputValue) 
+        // || words.includes(capitalizedVal)
       })
       // .sort((a,b)=> a.ingredients.length - b.ingredients.length )
       .slice(0,3)
-    :res[2].data.foods;
-    const Foundation = res[3].data.foods.length>10?res[3].data.foods
+    :Survey;
+     Foundation = Foundation.length>10?Foundation
     .filter(x => 
       { 
-        const words = x.description.split(" "); 
-        const upperVal = val.toUpperCase(); 
-        const capitalizedVal = val.charAt(0).toUpperCase() + val.slice(1); 
-        return words.includes(upperVal) 
-        || words.includes(val) 
-        || words.includes(capitalizedVal)
+        const words = x.description.match(new RegExp(inputValue,'i')); 
+        const arr = inputValue.split(" ")
+        if(arr.length>1){
+          for(let item in arr){
+          if(x.description.match(new RegExp(item,'i'))){
+            return true
+          }
+        }}
+        // const upperVal = inputValue.toUpperCase(); 
+        // const capitalizedVal = inputValue.charAt(0).toUpperCase() + inputValue.slice(1); 
+        return words
+        // || words.includes(inputValue) 
+        // || words.includes(capitalizedVal)
       })
-        .sort((a,b)=> a.ingredients.length - b.ingredients.length )
+        .sort((a,b)=> a.description.length - b.description.length )
         .slice(0,10)
-    :res[3].data.foods
+    :Foundation
     
 
     console.log(Branded,SRLegacy,Survey,Foundation)
@@ -492,10 +551,10 @@ const [isLoading,setIsLoading] = useState(true)
     // const res1 = item.foods.sort((a,b)=> a.finalFoodInputFoods.length - b.finalFoodInputFoods.length ).filter(x => 
     //   { 
     //     const words = x.description.split(" "); 
-    //     const upperVal = val.toUpperCase(); 
-    //     const capitalizedVal = val.charAt(0).toUpperCase() + val.slice(1); 
-    //     return words.includes(upperVal) || words.includes(val) || words.includes(capitalizedVal)})
-    // .filter(x=>x.description.split(" ").includes(`${val.toUpperCase()}`))
+    //     const upperVal = inputValue.toUpperCase(); 
+    //     const capitalizedVal = inputValue.charAt(0).toUpperCase() + inputValue.slice(1); 
+    //     return words|| words.includes(inputValue) || words.includes(capitalizedVal)})
+    // .filter(x=>x.description.split(" ").includes(`${inputValue.toUpperCase()}`))
     // 
 
     // console.log(res1)
@@ -506,15 +565,32 @@ const [isLoading,setIsLoading] = useState(true)
       const reqHeader = {
         "Content-Type":"application/json",
         "Authorization":`Bearer ${token}`}
-    const result = await AddSearchCacheFoodsApi({search:val,data:arr},reqHeader)
+    const result = await AddSearchCacheFoodsApi({search:inputValue,data:arr},reqHeader)
     console.log(result.data)
+    if(result.status==200){
       sessionStorage.setItem('existingUser',JSON.stringify(result.data.existingUser))
+    }
     
   }
 
   }
   else{
-    const res = data[val]
+    console.log('Inside existing search')
+    const res = data[val].filter(x=>{
+      const nutrientIdsToExclude = [1003, 1004, 1005];
+      const nutrientIdsToInclude = [1008, 2047];
+    
+      const hasExcludedNutrients = nutrientIdsToExclude.some(id => 
+        x.foodNutrients.some(nutrient => nutrient.nutrientId === id)
+      );
+    
+      const hasIncludedNutrients = nutrientIdsToInclude.some(id => 
+        x.foodNutrients.some(nutrient => nutrient.nutrientId === id)
+      );
+    
+      return hasExcludedNutrients && hasIncludedNutrients;
+      
+    })
     console.log(res)
     setSearchlist(res)
     setIsLoading(false)
@@ -676,6 +752,68 @@ useEffect(()=>{
  
 },[userDate])
 
+const handleRiceSearch = async() =>{
+  const foods = []
+  let currentPage = 1
+  const pageSize = 50
+
+  while(currentPage<25){
+    try {
+      const val = await axios.get(`https://api.nal.usda.gov/fdc/v1/foods/search?query&dataType=Foundation,Survey%20%28FNDDS%29&sortBy=dataType.keyword&sortOrder=asc&pageSize=${pageSize}&pageNumber=${currentPage}&api_key=6Rkidb7Quy8L9JL8stBCj4v2QBcauWpia7tjGvxB`)
+      if(val.data.foods && val.data.foods.length>0){
+        const filteredFoods = val.data.foods.filter(food => {
+          const fiber = food.foodNutrients.find(nutrient => nutrient.nutrientName === 'Fiber, total dietary');
+          const energy = food.foodNutrients.find(nutrient => nutrient.nutrientId === 2047);
+          const protein = food.foodNutrients.find(nutrient => nutrient.nutrientId === 1003);
+          const fats = food.foodNutrients.find(nutrient => nutrient.nutrientId === 1004);
+          return fiber &&  energy && protein && fats && fiber.value < 3 && fats.value< 4 && energy.value>70; // Example: Filter for low fiber (< 1g)
+        });
+        console.log(filteredFoods)
+        foods.push(...filteredFoods);
+        currentPage++;
+
+      }
+      else{
+        break
+      }
+      
+    } catch (err) {
+      console.error(`Error fetching page ${currentPage}:`, err);
+      break; 
+    }
+  }
+  console.log(foods)
+
+//   const res3 = await FindUSDAFoodApi('Foundation','chapati')
+//   console.log(res3.data)
+//  console.log(res3.data.aggregations.dataType)
+//  if(res3.data.aggregations.dataType.hasOwnProperty('Branded')){
+//   console.log('Inside Branded')
+//     const result = await FindUSDAFoodApi('Branded','chapati')
+//   console.log(result.data)
+//  }
+//  if(res3.data.aggregations.dataType.hasOwnProperty('SR Legacy')){
+//   console.log('Inside SR Legacy')
+//     const res1 = await FindUSDAFoodApi('SR Legacy','chapati')
+//   console.log(res1.data)
+//  }
+//  if(res3.data.aggregations.dataType.hasOwnProperty('Survey (FNDDS)')){
+//   console.log('Inside Survey (FNDDS)')
+//     const res2 = await FindUSDAFoodApi('Survey (FNDDS)','chapati')
+//   console.log(res2.data)
+ }
+
+
+
+
+
+
+
+
+  // const data = await result.json()
+  // console.log(data)
+
+
 const [userMeals,setUserMeals] = useState({})
 //main useEffect
   useEffect(() => {
@@ -719,6 +857,7 @@ const [userMeals,setUserMeals] = useState({})
           <div className=" w-[90%] md:w-[85%]">
             <div className="z-10 flex justify-center w-100 ">
               <h1 className="text-2xl">Your Nutritional Info</h1>
+              <button onClick={handleRiceSearch}>Click me</button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr_1fr] grid-rows-1 md:grid-rows-[1vw_auto_1vw] w-100 mt-8">
               <div className="w-full md:w-[60%] content-container mx-auto md:col-start-1 md:row-start-2 bg-[#2F4858] text-white px-3 py-3 rounded-md">
@@ -765,58 +904,58 @@ const [userMeals,setUserMeals] = useState({})
               <div className="w-full block md:hidden bg-[#2F4858] text-white px-6 py-8 rounded-b-md">
                 <div className="flex justify-between mb-1">
                   <p className="text-lg italic">Calories</p>
-                  <p className="text-lg ">{goals.calories}kcal</p>
+                  <p className="text-lg ">{JSON.parse(sessionStorage.getItem('usernutrition'))?JSON.parse(sessionStorage.getItem('usernutrition')).calories:0} kcal</p>
                 </div>
-                <StatusBar animation={animation} small={true} curr={JSON.parse(sessionStorage.getItem('usernutrition')).calories} total={goals.calories} />
+                <StatusBar animation={animation} small={true} curr={JSON.parse(sessionStorage.getItem('usernutrition'))?JSON.parse(sessionStorage.getItem('usernutrition')).calories:0} total={goals.calories} />
                 <div style={{ height: "10px" }}></div>
                 <div className="flex justify-between mb-1 ">
                   <p className="text-lg italic">Protein</p>
-                  <p className="text-lg">20g</p>
+                  <p className="text-lg">{JSON.parse(sessionStorage.getItem('usernutrition'))?JSON.parse(sessionStorage.getItem('usernutrition')).protein:0} g</p>
                 </div>
-                <StatusBar animation={animation} small={true} curr={JSON.parse(sessionStorage.getItem('usernutrition')).protein} total={goals.protein} />
+                <StatusBar animation={animation} small={true} curr={JSON.parse(sessionStorage.getItem('usernutrition'))?JSON.parse(sessionStorage.getItem('usernutrition')).protein:0} total={goals.protein} />
                 <div style={{ height: "10px" }}></div>
                 <div className="flex justify-between mb-1">
                   <p className="text-lg italic">Carbs</p>
-                  <p className="text-lg">80g</p>
+                  <p className="text-lg">{JSON.parse(sessionStorage.getItem('usernutrition'))?JSON.parse(sessionStorage.getItem('usernutrition')).carbs:0} g</p>
                 </div>
-                <StatusBar animation={animation} small={true} curr={JSON.parse(sessionStorage.getItem('usernutrition')).carbs} total={goals.carbs} />
+                <StatusBar animation={animation} small={true} curr={JSON.parse(sessionStorage.getItem('usernutrition'))?JSON.parse(sessionStorage.getItem('usernutrition')).carbs:0} total={goals.carbs} />
                 <div style={{ height: "10px" }}></div>
                 <div className="flex justify-between mb-1">
                   <p className="text-lg italic">Fats</p>
-                  <p className="text-lg">2g</p>
+                  <p className="text-lg">{JSON.parse(sessionStorage.getItem('usernutrition'))?JSON.parse(sessionStorage.getItem('usernutrition')).fats:0} g</p>
                 </div>
-                <StatusBar animation={animation} small={true} curr={JSON.parse(sessionStorage.getItem('usernutrition')).fats} total={goals.fats} />
+                <StatusBar animation={animation} small={true} curr={JSON.parse(sessionStorage.getItem('usernutrition'))?JSON.parse(sessionStorage.getItem('usernutrition')).fats:0} total={goals.fats} />
                 <div style={{ height: "10px" }}></div>
               </div>
 
               <div className="mx-auto  border w-full md:w-[60%] hidden md:block content-container  md:col-start-2  md:row-start-1  md:row-span-3 bg-[#2F4858] text-white px-3 py-5 rounded-md">
                 <h3 className="text-sm">Calories intake today</h3>
-                <h1 className="text-[3.75vw] mb-3">
-                  1580<span className="text-lg ms-1">kcal</span>
+                <h1 className="text-[3.75vw] mb-6">
+                {JSON.parse(sessionStorage.getItem('usernutrition'))?JSON.parse(sessionStorage.getItem('usernutrition')).calories:0}<span className="text-lg ms-1">kcal</span>
                 </h1>
-                <StatusBar animation={animation} curr={JSON.parse(sessionStorage.getItem('usernutrition')).calories} total={goals.calories} />
-                <p className="float-end text-[1vw] mt-2">
-                  {goals.calories}kcal
+                <StatusBar animation={animation} curr={JSON.parse(sessionStorage.getItem('usernutrition'))?JSON.parse(sessionStorage.getItem('usernutrition')).calories:1} total={goals.calories} />
+                <p className="float-end text-[1.1vw] mt-2">
+                Goal: {goals.calories}kcal
                 </p>
               </div>
               <div className="mx-auto border px-6 py-6 w-full md:w-[90%] hidden md:block justify-content-center content-container md:col-start-3 md:row-start-2 bg-[#2F4858] text-white rounded-md">
                 <div className="flex justify-between mb-1 ">
                   <p className="text-sm">Protein</p>
-                  <p className="text-sm">20g</p>
+                  <p className="text-sm">{JSON.parse(sessionStorage.getItem('usernutrition'))?JSON.parse(sessionStorage.getItem('usernutrition')).protein:0} g</p>
                 </div>
-                <StatusBar animation={animation} small={true} curr={JSON.parse(sessionStorage.getItem('usernutrition')).protein} total={goals.protein} />
+                <StatusBar animation={animation} small={true} curr={JSON.parse(sessionStorage.getItem('usernutrition'))?JSON.parse(sessionStorage.getItem('usernutrition')).protein:1} total={goals.protein} />
                 <div style={{ height: "10px" }}></div>
                 <div className="flex justify-between mb-1">
                   <p className="text-sm">Carbs</p>
-                  <p className="text-sm">80g</p>
+                  <p className="text-sm">{JSON.parse(sessionStorage.getItem('usernutrition'))?JSON.parse(sessionStorage.getItem('usernutrition')).carbs:0} g</p>
                 </div>
-                <StatusBar animation={animation} small={true} curr={JSON.parse(sessionStorage.getItem('usernutrition')).carbs} total={goals.carbs} />
+                <StatusBar animation={animation} small={true} curr={JSON.parse(sessionStorage.getItem('usernutrition'))?JSON.parse(sessionStorage.getItem('usernutrition')).carbs:1} total={goals.carbs} />
                 <div style={{ height: "10px" }}></div>
                 <div className="flex justify-between mb-1">
                   <p className="text-sm">Fats</p>
-                  <p className="text-sm">2g</p>
+                  <p className="text-sm">{JSON.parse(sessionStorage.getItem('usernutrition'))?JSON.parse(sessionStorage.getItem('usernutrition')).fats:0} g</p>
                 </div>
-                <StatusBar animation={animation} small={true} curr={JSON.parse(sessionStorage.getItem('usernutrition')).fats} total={goals.fats} />
+                <StatusBar animation={animation} small={true} curr={JSON.parse(sessionStorage.getItem('usernutrition'))?JSON.parse(sessionStorage.getItem('usernutrition')).fats:1} total={goals.fats} />
                 <div style={{ height: "10px" }}></div>
               </div>
             </div>

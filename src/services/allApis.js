@@ -33,10 +33,6 @@ export const DeleteUserFoodApi = async(foodID,reqheader) =>{
     return await commonApi('DELETE',`${serverUrl}/delete-user-recipe/${foodID}`,{},reqheader)
 }
 
-export const FindUSDAFoodApi = async(datatype,searchval) =>{
-    console.log(searchval)
-    return await commonApi('GET',`${serverUrl}/usda-foods/${datatype}/list?search=${searchval}`)
-}
 
 export const AddSearchCacheFoodsApi = async(reqBody,reqheader) =>{
     return await commonApi('POST',`${serverUrl}/add-search-foods`,reqBody,reqheader)
@@ -53,4 +49,9 @@ export const AddUSDAEditedImageApi = async(reqBody,reqheader) =>{
 export const GetUserMealsOfTheDayApi = async(date,reqheader) =>{
     return await commonApi('GET',`${serverUrl}/get-user-meals/${date}`,"",reqheader)
 }
+
+export const FindUSDAFoodApi = async(datatype,searchval) =>{
+    return await commonApi('GET',`${serverUrl}/usda-foods/${datatype}/list?search=${searchval}`)
+}
+
 
