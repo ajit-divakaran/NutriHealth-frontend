@@ -6,10 +6,10 @@ import { EditUserMealApi } from '../services/allApis'
 import { ToastContainer, toast } from 'react-toastify';
 
 
-const Diet = ({setAnimation,setaddFood,setRefreshStatus,setMealTime,userMeals,head}) => {
+const Diet = ({setIsQuantityUpdated,setAnimation,setaddFood,setRefreshStatus,setMealTime,userMeals,head}) => {
     // const [userDietMeals,setUserDietMeals] = useState(userMeals)
-    const [quantity,setQuantity] = useState(1)
-    const [editOpen, setEditOpen] = useState(false)
+    const [quantity,setQuantity] = useState(0)
+    // const [editOpen, setEditOpen] = useState(false)
     const handleAdd = () =>{
         setaddFood(true)
         let mealtime = head.charAt(0).toLowerCase() + head.slice(1)
@@ -53,16 +53,63 @@ const Diet = ({setAnimation,setaddFood,setRefreshStatus,setMealTime,userMeals,he
     }
     const handleClick = (item) =>{
         console.log('Clicked: ',item)
-        setEditOpen(true)
+        // setEditOpen(true)
     }
 
-    const calculateNutrition = () =>{
+    const calculateNutrition = (input,item) =>{
+        let mealtime = head.charAt(0).toLowerCase() + head.slice(1)
         console.log('Calculate nutrition')
+        let newCal = item.calories
+        let newCarbs = item.carbs
+        let newPro = item.protein
+        let newFat = item.fat
+        console.log('Inside calculate quamtity', input)
+        let obj = JSON.parse(sessionStorage.getItem("UsermealsToday"))
+        const index = obj[mealtime].findIndex(x=>x.food_id==item.food_id)
+        if(index!==-1){        
+            if(input > obj[mealtime][index].quantity){
+            newCal = newCal*input*1;
+            newCarbs = newCarbs*input*1;
+            newPro = newPro*input*1;
+            newFat = newFat*input*1;
+            // console.log()
+            
+           
+                obj[mealtime][index].quantity = input
+                obj[mealtime][index].calories = newCal
+                obj[mealtime][index].carbs = newCarbs
+                obj[mealtime][index].fat = newFat
+                obj[mealtime][index].protein = newPro
+                sessionStorage.setItem('UsermealsToday',JSON.stringify(obj))
+                setRefreshStatus(obj)
+                setAnimation(true)
+                // console.log(obj[index].quantity,obj)
+        
+            }
+            else{
+            newCal = newCal/quantity*1;
+            newCarbs = newCarbs/quantity*1;
+            newPro = newPro/quantity*1;
+            newFat = newFat/quantity*1;
+            // console.log()
+                obj[mealtime][index].quantity = quantity
+                obj[mealtime][index].calories = newCal
+                obj[mealtime][index].carbs = newCarbs
+                obj[mealtime][index].fat = newFat
+                obj[mealtime][index].protein = newPro
+                sessionStorage.setItem('UsermealsToday',JSON.stringify(obj))
+                setRefreshStatus(obj)
+                setAnimation(true)
+            }
+        }
     }
-    const handleQuantity = (e) =>{
+
+    const handleQuantity = (e,item) =>{
         const input = e.target.value
+        console.log(input)
+        setIsQuantityUpdated(true)
         setQuantity(input)
-        calculateNutrition()
+        calculateNutrition(input,item)
     }
 
     // useEffect(()=>{
@@ -87,7 +134,7 @@ const Diet = ({setAnimation,setaddFood,setRefreshStatus,setMealTime,userMeals,he
                 <div key={index} onClick={()=>handleClick(item)} className="flex meal mb-1 bg-[#b9aa87] rounded-lg py-2 px-4 justify-between w-[90vw] md:w-[100%]">
                     <div className=''>
                         <p>{item.food_name}</p>
-                        <h6 className='my-2'><input type="number" name="" id="" className='w-1/4 bg-white bg-opacity-[0.5] rounded' onChange={handleQuantity} value={quantity}/> x {item.customServing?item.customServing:item.serving} {!(item.serving.includes('(')) && item.serveUnit}</h6>
+                        <h6 className='my-2'><input type="number" name="" id="" className='w-1/4 bg-white bg-opacity-[0.5] rounded' onChange={(e)=>handleQuantity(e,item)} value={quantity?quantity:item.quantity} min={1}/> x {item.customServing?item.customServing:item.serving} {!(item.serving.includes('(')) && item.serveUnit}</h6>
                     </div>
                     <div>
                         <h6>{item.calories*1} kcal</h6>

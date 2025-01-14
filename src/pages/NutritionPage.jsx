@@ -50,6 +50,7 @@ const NutritionPage = () => {
   const [inputValue, setInputValue] = useState('');
   const [searchlist, setSearchlist] = useState([]);
   const [searchInnateList, setSearchInnateList] = useState([])
+  const [isQuantityUpdated,setIsQuantityUpdated] = useState(false)
   // const [foodimage,setFoodimage] = useState('')
 
   const [USDACurrentDetails,setUSDACurrentDetails] = useState({
@@ -299,6 +300,7 @@ const handleMeasures = (item) =>{
           reqBody.append('mealtime',mealTime)
           reqBody.append('date',userDate)
           reqBody.append('customServing',customServing)
+          reqBody.append('quantity',1)
 
           if(foodimg instanceof File){
             console.log('Instance of file')
@@ -428,25 +430,25 @@ const [isLoading,setIsLoading] = useState(true)
     let SRLegacy = []
     let Survey = []
     console.log("Input",inputValue)
-    const apidata = await FindUSDAFoodApi('Foundation',inputValue);
+    const apidata = await FindUSDAFoodApi('Foundation',inputValue.trim());
    (apidata.data.foods.length)>0 && Foundation.push(...apidata.data.foods)
    console.log(Foundation)
 
    if(apidata.data.aggregations.dataType.hasOwnProperty('SR Legacy')){
     console.log('Inside SR Legacy')
-      const res1 = await FindUSDAFoodApi('SR Legacy',inputValue)
+      const res1 = await FindUSDAFoodApi('SR Legacy',inputValue.trim())
     console.log(res1.data);
     (res1.data.foods.length)>0 && SRLegacy.push(...res1.data.foods)
    }
    if(apidata.data.aggregations.dataType.hasOwnProperty('Survey (FNDDS)')){
     console.log('Inside Survey (FNDDS)')
-      const res2 = await FindUSDAFoodApi('Survey (FNDDS)',inputValue)
+      const res2 = await FindUSDAFoodApi('Survey (FNDDS)',inputValue.trim())
     console.log(res2.data);
    (res2.data.foods.length)>0 && Survey.push(...res2.data.foods)
    }
    if(apidata.data.aggregations.dataType.hasOwnProperty('Branded')){
     console.log('Inside Branded')
-      const res3 = await FindUSDAFoodApi('Branded',inputValue)
+      const res3 = await FindUSDAFoodApi('Branded',inputValue.trim())
     console.log(res3.data);
     (res3.data.foods.length)>0 && Survey.push(...res3.data.foods)
    }
@@ -462,10 +464,10 @@ const [isLoading,setIsLoading] = useState(true)
     .filter(x => 
         { 
           const words = x.description.match(new RegExp(inputValue,'i')); 
-          const arr = inputValue.split(" ")
+          const arr = inputValue.trim().split(" ")
           
           if(arr.length>1){
-            for(let item in arr){
+            for(let item of arr){
             if(x.description.match(new RegExp(item,'i'))){
               return true
             }
@@ -486,7 +488,7 @@ const [isLoading,setIsLoading] = useState(true)
         const words = x.description.match(new RegExp(inputValue,'i')); 
         const arr = inputValue.split(" ")
         if(arr.length>1){
-          for(let item in arr){
+          for(let item of arr){
           if(x.description.match(new RegExp(item,'i'))){
             return true
           }
@@ -505,7 +507,7 @@ const [isLoading,setIsLoading] = useState(true)
         const words = x.description.match(new RegExp(inputValue,'i')); 
         const arr = inputValue.split(" ")
         if(arr.length>1){
-          for(let item in arr){
+          for(let item of arr){
           if(x.description.match(new RegExp(item,'i'))){
             return true
           }
@@ -525,7 +527,7 @@ const [isLoading,setIsLoading] = useState(true)
         const words = x.description.match(new RegExp(inputValue,'i')); 
         const arr = inputValue.split(" ")
         if(arr.length>1){
-          for(let item in arr){
+          for(let item of arr){
           if(x.description.match(new RegExp(item,'i'))){
             return true
           }
@@ -860,7 +862,7 @@ const [userMeals,setUserMeals] = useState({})
               <button onClick={handleRiceSearch}>Click me</button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr_1fr] grid-rows-1 md:grid-rows-[1vw_auto_1vw] w-100 mt-8">
-              <div className="w-full md:w-[60%] content-container mx-auto md:col-start-1 md:row-start-2 bg-[#2F4858] text-white px-3 py-3 rounded-md">
+              <div className="w-full md:w-[60%] date-container mx-auto md:col-start-1 md:row-start-2 bg-[#2F4858] text-white px-3 py-3 rounded-md">
                 <img src="/images/calendar.png" alt="" />
                 <div className="flex items-center mt-2">
                   <input
@@ -959,6 +961,13 @@ const [userMeals,setUserMeals] = useState({})
                 <div style={{ height: "10px" }}></div>
               </div>
             </div>
+
+            {isQuantityUpdated && <div className="flex justify-center mt-7 border -mb-5  ">
+                  <div className="rounded py-1 px-2 bg-[#2F4858] border border-2 border-black flex items-center gap-2">
+                    <h2 className="bg-[#2F4858] text-white">Updates detected</h2>
+                      <button className="btn rounded bg-[#EE973F] p-1">Save changes</button>
+                  </div>
+            </div>}
             {/* <div className="absolute -left-[6%] md:-left-[3%] -top-[11%] md:-top-[5%]  w-[20%] md:w-[10%] ">
             <img src="/images/left-bg.png" alt="no image" width={"100%"} />
           </div>
@@ -969,12 +978,12 @@ const [userMeals,setUserMeals] = useState({})
               className=" w-[30vw] "
             />
           </div> */}
-          {console.log(userMeals)}
+         
          <div className="added-meals w-100 mt-[5rem] grid grid-cols-1 md:grid-cols-3 gap-x-[3rem]">
-              <Diet setAnimation = {setAnimation} setaddFood = {setaddFood} setRefreshStatus={setRefreshStatus} setMealTime={setMealTime} userMeals={userMeals.breakfast??[]} head={"Breakfast"} />
-              <Diet setAnimation = {setAnimation} setaddFood = {setaddFood} setRefreshStatus={setRefreshStatus} head={"Lunch"}  userMeals={userMeals.lunch??[]} setMealTime={setMealTime}/>
-              <Diet setAnimation = {setAnimation} setaddFood = {setaddFood} setRefreshStatus={setRefreshStatus} head={"Dinner"}  userMeals={userMeals.dinner??[]} setMealTime={setMealTime} />
-              <Diet setAnimation = {setAnimation} setaddFood = {setaddFood} setRefreshStatus={setRefreshStatus} head={"Snacks"}  userMeals={userMeals.snacks??[]} setMealTime={setMealTime} />
+              <Diet setIsQuantityUpdated={setIsQuantityUpdated} setAnimation = {setAnimation} setaddFood = {setaddFood} setRefreshStatus={setRefreshStatus} setMealTime={setMealTime} userMeals={userMeals.breakfast??[]} head={"Breakfast"} />
+              <Diet setIsQuantityUpdated={setIsQuantityUpdated} setAnimation = {setAnimation} setaddFood = {setaddFood} setRefreshStatus={setRefreshStatus} head={"Lunch"}  userMeals={userMeals.lunch??[]} setMealTime={setMealTime}/>
+              <Diet setIsQuantityUpdated={setIsQuantityUpdated} setAnimation = {setAnimation} setaddFood = {setaddFood} setRefreshStatus={setRefreshStatus} head={"Dinner"}  userMeals={userMeals.dinner??[]} setMealTime={setMealTime} />
+              <Diet setIsQuantityUpdated={setIsQuantityUpdated} setAnimation = {setAnimation} setaddFood = {setaddFood} setRefreshStatus={setRefreshStatus} head={"Snacks"}  userMeals={userMeals.snacks??[]} setMealTime={setMealTime} />
             </div>
           </div>
         </div>
