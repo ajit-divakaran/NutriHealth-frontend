@@ -71,6 +71,8 @@ const NutritionPage = () => {
   const [refreshStatus,setRefreshStatus] = useState({})
   const [mealTime,setMealTime] = useState('')
 
+  const [quantityChangedValues,setQuantityChangedValues] = useState({})
+
   const handleDate = (e) => {
     const date = e.target.value;
     console.log(date.length);
@@ -716,6 +718,9 @@ const firstTimeUserMeals = async()=>{
   setAnimation(true)
 }
 
+const [unsavedNutrition,setUnsavedNutrition] = useState({})
+
+// User Full nutrition
 const getCurrentGoalValues = () =>{
   const data = sessionStorage.getItem('UsermealsToday')
   console.log(data)
@@ -723,7 +728,7 @@ const getCurrentGoalValues = () =>{
   let protein = 0;
   let fats = 0;
   let carbs = 0;
-  let arr = JSON.parse(data)
+  let arr = Object.keys(quantityChangedValues).length?quantityChangedValues:JSON.parse(data)
   if(arr){ 
    
   for(let x in arr){
@@ -738,14 +743,15 @@ const getCurrentGoalValues = () =>{
       }  
     }
   }
-    let objdata = {calories:calories.toFixed(2)*1,protein:protein.toFixed(2)*1,fats:fats.toFixed(2)*1,carbs:carbs.toFixed(2)*1}
-    sessionStorage.setItem('usernutrition',JSON.stringify(objdata))
+    let objdata = {calories:calories.toFixed(2)*1,protein:protein.toFixed(2)*1,fats:fats.toFixed(2)*1,carbs:carbs.toFixed(2)*1};
+    Object.keys(quantityChangedValues).length>0?setUnsavedNutrition(objdata): sessionStorage.setItem('usernutrition',JSON.stringify(objdata))
     console.log('calories',calories)
     console.log('protein',protein)
     console.log('fats',fats)
     console.log('carbs',carbs)
 
   }
+  console.log(quantityChangedValues,unsavedNutrition)
 
 
 useEffect(()=>{
@@ -805,7 +811,54 @@ const handleRiceSearch = async() =>{
 //   console.log(res2.data)
  }
 
+const handleButtonSaveChanges = async() =>{
+  console.log('Api call')
+  setAnimation(false)
+  const {food_id,food_name,serving,serveUnit,calories,carbs,protein,fat,foodimg,customServing} =JSON.parse(session)
+        if((serving=='Custom'&& !customServing) || (serving!='Custom' && !serving)){
+          alert("Please Enter the serving")
+        }
+        else{
 
+        console.log('Mealtime : ',mealTime)
+        console.log('food id:',food_id)
+        const reqBody = new FormData()
+        reqBody.append('food_id',food_id)
+        reqBody.append('food_name',food_name)
+        reqBody.append('calories',calories)
+        reqBody.append('serving',serving)
+        reqBody.append('serveUnit',serveUnit)
+        reqBody.append('protein',protein)
+        reqBody.append('fat',fat)
+        reqBody.append('carbs',carbs)
+        reqBody.append('mealtime',mealTime)
+        reqBody.append('date',userDate)
+        reqBody.append('customServing',customServing)
+        reqBody.append('quantity',1)
+
+        if(foodimg instanceof File){
+          console.log('Instance of file')
+          reqBody.append('foodimg',foodimg)
+        }
+        else{
+          reqBody.append('foodimg',foodimg)
+        }
+
+        console.log(reqBody)
+
+
+        const token= sessionStorage.getItem('token')
+        console.log(token)
+          const reqHeader = {
+          "Content-type": "multipart/form-data",
+         "Authorization": `Bearer ${token}`,
+        };
+    
+        const result = await EditUserMealApi('edit',reqBody,reqHeader)          
+        console.log("Edit user meal",result)
+      
+      }
+}
 
 
 
@@ -906,36 +959,36 @@ const [userMeals,setUserMeals] = useState({})
               <div className="w-full block md:hidden bg-[#2F4858] text-white px-6 py-8 rounded-b-md">
                 <div className="flex justify-between mb-1">
                   <p className="text-lg italic">Calories</p>
-                  <p className="text-lg ">{JSON.parse(sessionStorage.getItem('usernutrition'))?JSON.parse(sessionStorage.getItem('usernutrition')).calories:0} kcal</p>
+                  <p className="text-lg ">{JSON.parse(sessionStorage.getItem('usernutrition'))?(Object.keys(quantityChangedValues).length?unsavedNutrition.calories:JSON.parse(sessionStorage.getItem('usernutrition')).calories):0} kcal</p>
                 </div>
-                <StatusBar animation={animation} small={true} curr={JSON.parse(sessionStorage.getItem('usernutrition'))?JSON.parse(sessionStorage.getItem('usernutrition')).calories:0} total={goals.calories} />
+                <StatusBar animation={animation} small={true} curr={JSON.parse(sessionStorage.getItem('usernutrition'))?(Object.keys(quantityChangedValues).length?unsavedNutrition.calories:JSON.parse(sessionStorage.getItem('usernutrition')).calories):0} total={goals.calories} />
                 <div style={{ height: "10px" }}></div>
                 <div className="flex justify-between mb-1 ">
                   <p className="text-lg italic">Protein</p>
-                  <p className="text-lg">{JSON.parse(sessionStorage.getItem('usernutrition'))?JSON.parse(sessionStorage.getItem('usernutrition')).protein:0} g</p>
+                  <p className="text-lg">{JSON.parse(sessionStorage.getItem('usernutrition'))?(Object.keys(quantityChangedValues).length?unsavedNutrition.protein:JSON.parse(sessionStorage.getItem('usernutrition')).protein):0} g</p>
                 </div>
-                <StatusBar animation={animation} small={true} curr={JSON.parse(sessionStorage.getItem('usernutrition'))?JSON.parse(sessionStorage.getItem('usernutrition')).protein:0} total={goals.protein} />
+                <StatusBar animation={animation} small={true} curr={JSON.parse(sessionStorage.getItem('usernutrition'))?(Object.keys(quantityChangedValues).length?unsavedNutrition.protein:JSON.parse(sessionStorage.getItem('usernutrition')).protein):0} total={goals.protein} />
                 <div style={{ height: "10px" }}></div>
                 <div className="flex justify-between mb-1">
                   <p className="text-lg italic">Carbs</p>
-                  <p className="text-lg">{JSON.parse(sessionStorage.getItem('usernutrition'))?JSON.parse(sessionStorage.getItem('usernutrition')).carbs:0} g</p>
+                  <p className="text-lg">{JSON.parse(sessionStorage.getItem('usernutrition'))?(Object.keys(quantityChangedValues).length?unsavedNutrition.carbs:JSON.parse(sessionStorage.getItem('usernutrition')).carbs):0} g</p>
                 </div>
-                <StatusBar animation={animation} small={true} curr={JSON.parse(sessionStorage.getItem('usernutrition'))?JSON.parse(sessionStorage.getItem('usernutrition')).carbs:0} total={goals.carbs} />
+                <StatusBar animation={animation} small={true} curr={JSON.parse(sessionStorage.getItem('usernutrition'))?(Object.keys(quantityChangedValues).length?unsavedNutrition.carbs:JSON.parse(sessionStorage.getItem('usernutrition')).carbs):0} total={goals.carbs} />
                 <div style={{ height: "10px" }}></div>
                 <div className="flex justify-between mb-1">
                   <p className="text-lg italic">Fats</p>
-                  <p className="text-lg">{JSON.parse(sessionStorage.getItem('usernutrition'))?JSON.parse(sessionStorage.getItem('usernutrition')).fats:0} g</p>
+                  <p className="text-lg">{JSON.parse(sessionStorage.getItem('usernutrition'))?(Object.keys(quantityChangedValues).length?unsavedNutrition.fats:JSON.parse(sessionStorage.getItem('usernutrition')).fats):0} g</p>
                 </div>
-                <StatusBar animation={animation} small={true} curr={JSON.parse(sessionStorage.getItem('usernutrition'))?JSON.parse(sessionStorage.getItem('usernutrition')).fats:0} total={goals.fats} />
+                <StatusBar animation={animation} small={true} curr={JSON.parse(sessionStorage.getItem('usernutrition'))?(Object.keys(quantityChangedValues).length?unsavedNutrition.fats:JSON.parse(sessionStorage.getItem('usernutrition')).fats):0} total={goals.fats} />
                 <div style={{ height: "10px" }}></div>
               </div>
 
               <div className="mx-auto  border w-full md:w-[60%] hidden md:block content-container  md:col-start-2  md:row-start-1  md:row-span-3 bg-[#2F4858] text-white px-3 py-5 rounded-md">
                 <h3 className="text-sm">Calories intake today</h3>
                 <h1 className="text-[3.75vw] mb-6">
-                {JSON.parse(sessionStorage.getItem('usernutrition'))?JSON.parse(sessionStorage.getItem('usernutrition')).calories:0}<span className="text-lg ms-1">kcal</span>
+                {JSON.parse(sessionStorage.getItem('usernutrition'))?(Object.keys(quantityChangedValues).length?unsavedNutrition.calories:JSON.parse(sessionStorage.getItem('usernutrition')).calories):0}<span className="text-lg ms-1">kcal</span>
                 </h1>
-                <StatusBar animation={animation} curr={JSON.parse(sessionStorage.getItem('usernutrition'))?JSON.parse(sessionStorage.getItem('usernutrition')).calories:1} total={goals.calories} />
+                <StatusBar animation={animation} curr={JSON.parse(sessionStorage.getItem('usernutrition'))?(Object.keys(quantityChangedValues).length?unsavedNutrition.calories:JSON.parse(sessionStorage.getItem('usernutrition')).calories):1} total={goals.calories} />
                 <p className="float-end text-[1.1vw] mt-2">
                 Goal: {goals.calories}kcal
                 </p>
@@ -943,21 +996,21 @@ const [userMeals,setUserMeals] = useState({})
               <div className="mx-auto border px-6 py-6 w-full md:w-[90%] hidden md:block justify-content-center content-container md:col-start-3 md:row-start-2 bg-[#2F4858] text-white rounded-md">
                 <div className="flex justify-between mb-1 ">
                   <p className="text-sm">Protein</p>
-                  <p className="text-sm">{JSON.parse(sessionStorage.getItem('usernutrition'))?JSON.parse(sessionStorage.getItem('usernutrition')).protein:0} g</p>
+                  <p className="text-sm">{JSON.parse(sessionStorage.getItem('usernutrition'))?(Object.keys(quantityChangedValues).length?unsavedNutrition.protein:JSON.parse(sessionStorage.getItem('usernutrition')).protein):0} g</p>
                 </div>
-                <StatusBar animation={animation} small={true} curr={JSON.parse(sessionStorage.getItem('usernutrition'))?JSON.parse(sessionStorage.getItem('usernutrition')).protein:1} total={goals.protein} />
+                <StatusBar animation={animation} small={true} curr={JSON.parse(sessionStorage.getItem('usernutrition'))?(Object.keys(quantityChangedValues).length?unsavedNutrition.protein:JSON.parse(sessionStorage.getItem('usernutrition')).protein):1} total={goals.protein} />
                 <div style={{ height: "10px" }}></div>
                 <div className="flex justify-between mb-1">
                   <p className="text-sm">Carbs</p>
-                  <p className="text-sm">{JSON.parse(sessionStorage.getItem('usernutrition'))?JSON.parse(sessionStorage.getItem('usernutrition')).carbs:0} g</p>
+                  <p className="text-sm">{JSON.parse(sessionStorage.getItem('usernutrition'))?(Object.keys(quantityChangedValues).length?unsavedNutrition.carbs:JSON.parse(sessionStorage.getItem('usernutrition')).carbs):0} g</p>
                 </div>
-                <StatusBar animation={animation} small={true} curr={JSON.parse(sessionStorage.getItem('usernutrition'))?JSON.parse(sessionStorage.getItem('usernutrition')).carbs:1} total={goals.carbs} />
+                <StatusBar animation={animation} small={true} curr={JSON.parse(sessionStorage.getItem('usernutrition'))?(Object.keys(quantityChangedValues).length?unsavedNutrition.carbs:JSON.parse(sessionStorage.getItem('usernutrition')).carbs):1} total={goals.carbs} />
                 <div style={{ height: "10px" }}></div>
                 <div className="flex justify-between mb-1">
                   <p className="text-sm">Fats</p>
-                  <p className="text-sm">{JSON.parse(sessionStorage.getItem('usernutrition'))?JSON.parse(sessionStorage.getItem('usernutrition')).fats:0} g</p>
+                  <p className="text-sm">{JSON.parse(sessionStorage.getItem('usernutrition'))?(Object.keys(quantityChangedValues).length?unsavedNutrition.fats:JSON.parse(sessionStorage.getItem('usernutrition')).fats):0} g</p>
                 </div>
-                <StatusBar animation={animation} small={true} curr={JSON.parse(sessionStorage.getItem('usernutrition'))?JSON.parse(sessionStorage.getItem('usernutrition')).fats:1} total={goals.fats} />
+                <StatusBar animation={animation} small={true} curr={JSON.parse(sessionStorage.getItem('usernutrition'))?(Object.keys(quantityChangedValues).length?unsavedNutrition.fats:JSON.parse(sessionStorage.getItem('usernutrition')).fats):1} total={goals.fats} />
                 <div style={{ height: "10px" }}></div>
               </div>
             </div>
@@ -965,7 +1018,7 @@ const [userMeals,setUserMeals] = useState({})
             {isQuantityUpdated && <div className="flex justify-center mt-7 border -mb-5  ">
                   <div className="rounded py-1 px-2 bg-[#2F4858] border border-2 border-black flex items-center gap-2">
                     <h2 className="bg-[#2F4858] text-white">Updates detected</h2>
-                      <button className="btn rounded bg-[#EE973F] p-1">Save changes</button>
+                      <button className="btn rounded bg-[#EE973F] p-1" onClick={handleButtonSaveChanges}>Save changes</button>
                   </div>
             </div>}
             {/* <div className="absolute -left-[6%] md:-left-[3%] -top-[11%] md:-top-[5%]  w-[20%] md:w-[10%] ">
@@ -980,10 +1033,10 @@ const [userMeals,setUserMeals] = useState({})
           </div> */}
          
          <div className="added-meals w-100 mt-[5rem] grid grid-cols-1 md:grid-cols-3 gap-x-[3rem]">
-              <Diet setIsQuantityUpdated={setIsQuantityUpdated} setAnimation = {setAnimation} setaddFood = {setaddFood} setRefreshStatus={setRefreshStatus} setMealTime={setMealTime} userMeals={userMeals.breakfast??[]} head={"Breakfast"} />
-              <Diet setIsQuantityUpdated={setIsQuantityUpdated} setAnimation = {setAnimation} setaddFood = {setaddFood} setRefreshStatus={setRefreshStatus} head={"Lunch"}  userMeals={userMeals.lunch??[]} setMealTime={setMealTime}/>
-              <Diet setIsQuantityUpdated={setIsQuantityUpdated} setAnimation = {setAnimation} setaddFood = {setaddFood} setRefreshStatus={setRefreshStatus} head={"Dinner"}  userMeals={userMeals.dinner??[]} setMealTime={setMealTime} />
-              <Diet setIsQuantityUpdated={setIsQuantityUpdated} setAnimation = {setAnimation} setaddFood = {setaddFood} setRefreshStatus={setRefreshStatus} head={"Snacks"}  userMeals={userMeals.snacks??[]} setMealTime={setMealTime} />
+              <Diet setQuantityChangedValues = {setQuantityChangedValues} setIsQuantityUpdated={setIsQuantityUpdated} setAnimation = {setAnimation} setaddFood = {setaddFood} setRefreshStatus={setRefreshStatus} setMealTime={setMealTime} userMeals={userMeals.breakfast??[]} head={"Breakfast"} />
+              <Diet setQuantityChangedValues = {setQuantityChangedValues} setIsQuantityUpdated={setIsQuantityUpdated} setAnimation = {setAnimation} setaddFood = {setaddFood} setRefreshStatus={setRefreshStatus} head={"Lunch"}  userMeals={userMeals.lunch??[]} setMealTime={setMealTime}/>
+              <Diet setQuantityChangedValues = {setQuantityChangedValues} setIsQuantityUpdated={setIsQuantityUpdated} setAnimation = {setAnimation} setaddFood = {setaddFood} setRefreshStatus={setRefreshStatus} head={"Dinner"}  userMeals={userMeals.dinner??[]} setMealTime={setMealTime} />
+              <Diet setQuantityChangedValues = {setQuantityChangedValues} setIsQuantityUpdated={setIsQuantityUpdated} setAnimation = {setAnimation} setaddFood = {setaddFood} setRefreshStatus={setRefreshStatus} head={"Snacks"}  userMeals={userMeals.snacks??[]} setMealTime={setMealTime} />
             </div>
           </div>
         </div>

@@ -6,9 +6,10 @@ import { EditUserMealApi } from '../services/allApis'
 import { ToastContainer, toast } from 'react-toastify';
 
 
-const Diet = ({setIsQuantityUpdated,setAnimation,setaddFood,setRefreshStatus,setMealTime,userMeals,head}) => {
+const Diet = ({setQuantityChangedValues,setIsQuantityUpdated,setAnimation,setaddFood,setRefreshStatus,setMealTime,userMeals,head}) => {
     // const [userDietMeals,setUserDietMeals] = useState(userMeals)
     const [quantity,setQuantity] = useState(0)
+    
     // const [editOpen, setEditOpen] = useState(false)
     const handleAdd = () =>{
         setaddFood(true)
@@ -58,6 +59,7 @@ const Diet = ({setIsQuantityUpdated,setAnimation,setaddFood,setRefreshStatus,set
 
     const calculateNutrition = (input,item) =>{
         let mealtime = head.charAt(0).toLowerCase() + head.slice(1)
+        console.log('Mealtime', mealtime)
         console.log('Calculate nutrition')
         let newCal = item.calories
         let newCarbs = item.carbs
@@ -67,7 +69,7 @@ const Diet = ({setIsQuantityUpdated,setAnimation,setaddFood,setRefreshStatus,set
         let obj = JSON.parse(sessionStorage.getItem("UsermealsToday"))
         const index = obj[mealtime].findIndex(x=>x.food_id==item.food_id)
         if(index!==-1){        
-            if(input > obj[mealtime][index].quantity){
+            // if(input > obj[mealtime][index].quantity){
             newCal = newCal*input*1;
             newCarbs = newCarbs*input*1;
             newPro = newPro*input*1;
@@ -80,27 +82,29 @@ const Diet = ({setIsQuantityUpdated,setAnimation,setaddFood,setRefreshStatus,set
                 obj[mealtime][index].carbs = newCarbs
                 obj[mealtime][index].fat = newFat
                 obj[mealtime][index].protein = newPro
-                sessionStorage.setItem('UsermealsToday',JSON.stringify(obj))
+                // sessionStorage.setItem('UsermealsToday',JSON.stringify(obj))
+                setQuantityChangedValues(obj)
+                console.log(obj)
                 setRefreshStatus(obj)
                 setAnimation(true)
                 // console.log(obj[index].quantity,obj)
         
-            }
-            else{
-            newCal = newCal/quantity*1;
-            newCarbs = newCarbs/quantity*1;
-            newPro = newPro/quantity*1;
-            newFat = newFat/quantity*1;
-            // console.log()
-                obj[mealtime][index].quantity = quantity
-                obj[mealtime][index].calories = newCal
-                obj[mealtime][index].carbs = newCarbs
-                obj[mealtime][index].fat = newFat
-                obj[mealtime][index].protein = newPro
-                sessionStorage.setItem('UsermealsToday',JSON.stringify(obj))
-                setRefreshStatus(obj)
-                setAnimation(true)
-            }
+            // }
+            // else{
+            // newCal = newCal/quantity*1;
+            // newCarbs = newCarbs/quantity*1;
+            // newPro = newPro/quantity*1;
+            // newFat = newFat/quantity*1;
+            // // console.log()
+            //     obj[mealtime][index].quantity = quantity
+            //     obj[mealtime][index].calories = newCal
+            //     obj[mealtime][index].carbs = newCarbs
+            //     obj[mealtime][index].fat = newFat
+            //     obj[mealtime][index].protein = newPro
+            //     sessionStorage.setItem('UsermealsToday',JSON.stringify(obj))
+            //     setRefreshStatus(obj)
+            //     setAnimation(true)
+            // }
         }
     }
 
@@ -109,6 +113,7 @@ const Diet = ({setIsQuantityUpdated,setAnimation,setaddFood,setRefreshStatus,set
         console.log(input)
         setIsQuantityUpdated(true)
         setQuantity(input)
+
         calculateNutrition(input,item)
     }
 
