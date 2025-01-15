@@ -55,3 +55,6 @@ export const FindUSDAFoodApi = async(datatype,searchval) =>{
 }
 
 
+export const ChangeAfterUpdatedQuantityAPI = async(reqBody,reqheader) =>{
+    return await commonApi('POST',`${serverUrl}/change-quantity-of-meals`,reqBody,reqheader)
+}

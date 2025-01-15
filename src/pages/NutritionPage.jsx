@@ -7,7 +7,7 @@ import { faCaretDown } from "@fortawesome/free-solid-svg-icons/faCaretDown";
 import Diet from "../components/Diet";
 import { addHeaderHeight, removeProfileDiv } from "../context/ContextShare";
 import { useNavigate } from "react-router-dom";
-import { AddSearchCacheFoodsApi, AddUSDAEditedImageApi, EditUserMealApi, FindUSDAFoodApi, GetSearchFoodsinAddrecipesApi, GetUserMealsOfTheDayApi } from "../services/allApis";
+import { AddSearchCacheFoodsApi, AddUSDAEditedImageApi, ChangeAfterUpdatedQuantityAPI, EditUserMealApi, FindUSDAFoodApi, GetSearchFoodsinAddrecipesApi, GetUserMealsOfTheDayApi } from "../services/allApis";
 import axios from "axios";
 import { serverUrl } from "../services/serverUrl";
 import { toast, ToastContainer } from "react-toastify";
@@ -760,104 +760,28 @@ useEffect(()=>{
  
 },[userDate])
 
-const handleRiceSearch = async() =>{
-  const foods = []
-  let currentPage = 1
-  const pageSize = 50
 
-  while(currentPage<25){
-    try {
-      const val = await axios.get(`https://api.nal.usda.gov/fdc/v1/foods/search?query&dataType=Foundation,Survey%20%28FNDDS%29&sortBy=dataType.keyword&sortOrder=asc&pageSize=${pageSize}&pageNumber=${currentPage}&api_key=6Rkidb7Quy8L9JL8stBCj4v2QBcauWpia7tjGvxB`)
-      if(val.data.foods && val.data.foods.length>0){
-        const filteredFoods = val.data.foods.filter(food => {
-          const fiber = food.foodNutrients.find(nutrient => nutrient.nutrientName === 'Fiber, total dietary');
-          const energy = food.foodNutrients.find(nutrient => nutrient.nutrientId === 2047);
-          const protein = food.foodNutrients.find(nutrient => nutrient.nutrientId === 1003);
-          const fats = food.foodNutrients.find(nutrient => nutrient.nutrientId === 1004);
-          return fiber &&  energy && protein && fats && fiber.value < 3 && fats.value< 4 && energy.value>70; // Example: Filter for low fiber (< 1g)
-        });
-        console.log(filteredFoods)
-        foods.push(...filteredFoods);
-        currentPage++;
-
-      }
-      else{
-        break
-      }
-      
-    } catch (err) {
-      console.error(`Error fetching page ${currentPage}:`, err);
-      break; 
-    }
-  }
-  console.log(foods)
-
-//   const res3 = await FindUSDAFoodApi('Foundation','chapati')
-//   console.log(res3.data)
-//  console.log(res3.data.aggregations.dataType)
-//  if(res3.data.aggregations.dataType.hasOwnProperty('Branded')){
-//   console.log('Inside Branded')
-//     const result = await FindUSDAFoodApi('Branded','chapati')
-//   console.log(result.data)
-//  }
-//  if(res3.data.aggregations.dataType.hasOwnProperty('SR Legacy')){
-//   console.log('Inside SR Legacy')
-//     const res1 = await FindUSDAFoodApi('SR Legacy','chapati')
-//   console.log(res1.data)
-//  }
-//  if(res3.data.aggregations.dataType.hasOwnProperty('Survey (FNDDS)')){
-//   console.log('Inside Survey (FNDDS)')
-//     const res2 = await FindUSDAFoodApi('Survey (FNDDS)','chapati')
-//   console.log(res2.data)
- }
 
 const handleButtonSaveChanges = async() =>{
   console.log('Api call')
   setAnimation(false)
-  const {food_id,food_name,serving,serveUnit,calories,carbs,protein,fat,foodimg,customServing} =JSON.parse(session)
-        if((serving=='Custom'&& !customServing) || (serving!='Custom' && !serving)){
-          alert("Please Enter the serving")
-        }
-        else{
+  const reqbody = {...quantityChangedValues}
+  console.log(reqbody)
+  const token= sessionStorage.getItem('token')
+  const reqHeader = {
+    "Content-Type":"application/json",
+    "Authorization":`Bearer ${token}`}
 
-        console.log('Mealtime : ',mealTime)
-        console.log('food id:',food_id)
-        const reqBody = new FormData()
-        reqBody.append('food_id',food_id)
-        reqBody.append('food_name',food_name)
-        reqBody.append('calories',calories)
-        reqBody.append('serving',serving)
-        reqBody.append('serveUnit',serveUnit)
-        reqBody.append('protein',protein)
-        reqBody.append('fat',fat)
-        reqBody.append('carbs',carbs)
-        reqBody.append('mealtime',mealTime)
-        reqBody.append('date',userDate)
-        reqBody.append('customServing',customServing)
-        reqBody.append('quantity',1)
-
-        if(foodimg instanceof File){
-          console.log('Instance of file')
-          reqBody.append('foodimg',foodimg)
-        }
-        else{
-          reqBody.append('foodimg',foodimg)
-        }
-
-        console.log(reqBody)
-
-
-        const token= sessionStorage.getItem('token')
-        console.log(token)
-          const reqHeader = {
-          "Content-type": "multipart/form-data",
-         "Authorization": `Bearer ${token}`,
-        };
-    
-        const result = await EditUserMealApi('edit',reqBody,reqHeader)          
-        console.log("Edit user meal",result)
-      
-      }
+  const res = await ChangeAfterUpdatedQuantityAPI(reqbody,reqHeader)
+  console.log(res.data)
+  if(res.status==200){
+    sessionStorage.setItem('UsermealsToday',JSON.stringify(res.data))
+    setIsQuantityUpdated(false)
+    setQuantityChangedValues({})
+    setRefreshStatus(res.data)
+  }
+  setAnimation(true)
+  
 }
 
 
@@ -894,6 +818,8 @@ const [userMeals,setUserMeals] = useState({})
     }
     return () => {
       window.removeEventListener("resize", adjustRightDivHeight);
+
+
     };
  
   }, [refreshStatus]);
@@ -912,7 +838,7 @@ const [userMeals,setUserMeals] = useState({})
           <div className=" w-[90%] md:w-[85%]">
             <div className="z-10 flex justify-center w-100 ">
               <h1 className="text-2xl">Your Nutritional Info</h1>
-              <button onClick={handleRiceSearch}>Click me</button>
+              {/* <button onClick={handleRiceSearch}>Click me</button> */}
             </div>
             <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr_1fr] grid-rows-1 md:grid-rows-[1vw_auto_1vw] w-100 mt-8">
               <div className="w-full md:w-[60%] date-container mx-auto md:col-start-1 md:row-start-2 bg-[#2F4858] text-white px-3 py-3 rounded-md">

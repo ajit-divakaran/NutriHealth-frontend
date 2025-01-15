@@ -70,10 +70,10 @@ const Diet = ({setQuantityChangedValues,setIsQuantityUpdated,setAnimation,setadd
         const index = obj[mealtime].findIndex(x=>x.food_id==item.food_id)
         if(index!==-1){        
             // if(input > obj[mealtime][index].quantity){
-            newCal = newCal*input*1;
-            newCarbs = newCarbs*input*1;
-            newPro = newPro*input*1;
-            newFat = newFat*input*1;
+            newCal = (newCal/item.quantity)*input*1;
+            newCarbs = (newCarbs/item.quantity)*input*1;
+            newPro = (newPro/item.quantity)*input*1;
+            newFat = (newFat/item.quantity)*input*1;
             // console.log()
             
            
