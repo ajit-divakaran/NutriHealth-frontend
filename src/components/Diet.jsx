@@ -8,7 +8,7 @@ import { ToastContainer, toast } from 'react-toastify';
 
 const Diet = ({setQuantityChangedValues,setIsQuantityUpdated,setAnimation,setaddFood,setRefreshStatus,setMealTime,userMeals,head}) => {
     // const [userDietMeals,setUserDietMeals] = useState(userMeals)
-    const [quantity,setQuantity] = useState(0)
+    const [quantity,setQuantity] = useState({quantity:0,food_id:''})
     
     // const [editOpen, setEditOpen] = useState(false)
     const handleAdd = () =>{
@@ -74,14 +74,15 @@ const Diet = ({setQuantityChangedValues,setIsQuantityUpdated,setAnimation,setadd
             newCarbs = (newCarbs/item.quantity)*input*1;
             newPro = (newPro/item.quantity)*input*1;
             newFat = (newFat/item.quantity)*input*1;
+          
             // console.log()
             
            
                 obj[mealtime][index].quantity = input
-                obj[mealtime][index].calories = newCal
-                obj[mealtime][index].carbs = newCarbs
-                obj[mealtime][index].fat = newFat
-                obj[mealtime][index].protein = newPro
+                obj[mealtime][index].calories = newCal.toFixed(2)*1
+                obj[mealtime][index].carbs = newCarbs.toFixed(2)*1
+                obj[mealtime][index].fat = newFat.toFixed(2)*1
+                obj[mealtime][index].protein = newPro.toFixed(2)*1
                 // sessionStorage.setItem('UsermealsToday',JSON.stringify(obj))
                 setQuantityChangedValues(obj)
                 console.log(obj)
@@ -110,9 +111,9 @@ const Diet = ({setQuantityChangedValues,setIsQuantityUpdated,setAnimation,setadd
 
     const handleQuantity = (e,item) =>{
         const input = e.target.value
-        console.log(input)
+        console.log(typeof input)
         setIsQuantityUpdated(true)
-        setQuantity(input)
+        setQuantity({quantity:input,food_id:item.food_id})
 
         calculateNutrition(input,item)
     }
@@ -139,10 +140,10 @@ const Diet = ({setQuantityChangedValues,setIsQuantityUpdated,setAnimation,setadd
                 <div key={index} onClick={()=>handleClick(item)} className="flex meal mb-1 bg-[#b9aa87] rounded-lg py-2 px-4 justify-between w-[90vw] md:w-[100%]">
                     <div className=''>
                         <p>{item.food_name}</p>
-                        <h6 className='my-2'><input type="number" name="" id="" className='w-1/4 bg-white bg-opacity-[0.5] rounded' onChange={(e)=>handleQuantity(e,item)} value={quantity?quantity:item.quantity} min={1}/> x {item.customServing?item.customServing:item.serving} {!(item.serving.includes('(')) && item.serveUnit}</h6>
+                        <h6 className='my-2'><input type="number" name="" id="" className='w-1/4 bg-white bg-opacity-[0.5] rounded' onChange={(e)=>handleQuantity(e,item)} value={quantity.quantity && quantity.food_id == item.food_id?quantity.quantity:item.quantity} min={1} step={0.5}/> x {item.customServing?item.customServing:item.serving} {!(item.serving.includes('(')) && item.serveUnit}</h6>
                     </div>
                     <div>
-                        <h6>{item.calories*1} kcal</h6>
+                        <h6>{quantity.quantity && quantity.food_id == item.food_id?item.calories*quantity.quantity:item.calories*1} kcal</h6>
                     </div>
                     <div>
                     <FontAwesomeIcon icon={faMultiply} className='ms-3'onClick={()=>handleMealItemClose(item)}/>

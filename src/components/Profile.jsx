@@ -67,8 +67,9 @@ useEffect(()=>{
            <p className='mt-3'>No goals found</p>
           }
         </div>}
-        <Link to={'/edit-goals'}><button className='bg-black text-white rounded-md px-4 py-2 my-2' >{isGoalsDefined?"Edit":"Add"} goals</button></Link>
-        <hr className='h-[1.5px] bg-slate-400'/>
+{   isGoalsDefined?     <Link to={'/edit-goals'}><button className='bg-black text-white rounded-md px-4 py-2 my-2' >Edit goals</button></Link>:
+                 <Link to={'/goals'}><button className='bg-black text-white rounded-md px-4 py-2 my-2' >Add goals</button></Link>
+}        <hr className='h-[1.5px] bg-slate-400'/>
         <button className='bg-black text-white rounded-md px-4 py-2 my-2' onClick={handleLogout}>Logout</button>
         </div>}
     </div>

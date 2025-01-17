@@ -16,10 +16,10 @@ const Goals = ({edit}) => {
     
   // })
   const [userGoals, setUserGoals] = useState({
-      calories:0,
-      protein:0,
-      carbs:0,
-      fats:0
+      calories:null,
+      protein:null,
+      carbs:null,
+      fats:null
     
   })
 
@@ -31,8 +31,10 @@ const Goals = ({edit}) => {
       const {calories,protein,carbs,fats} = userGoals
         // console.log(userGoals)
         console.log("Inside goal click")
+
+        
         if(!calories || !protein || !carbs || !fats){
-          alert("Please fill the form completely")
+         alert("Please fill the form completely")
         }
         else
         { 
@@ -44,11 +46,13 @@ const Goals = ({edit}) => {
             "Authorization":`Bearer ${token}`
           }
           console.log(userGoals)
+
           const result =await EditGoalsApi({goals:userGoals},reqHeader)
           console.log(result.data)
           if(result.status==200){
             toast.success("Profile updated successfully")
             sessionStorage.setItem('existingUser',JSON.stringify(result.data))
+            setTimeout(()=>navigate("/dashboard"),2000)
         
           }
           else if(result.status==406){
@@ -60,7 +64,7 @@ const Goals = ({edit}) => {
           // navigate('/')
         }}
     }
-   
+   console.log(userGoals)
     useEffect(()=>{
         if(sessionStorage.getItem('token')){
             console.log("Inside Goals page")
@@ -68,6 +72,10 @@ const Goals = ({edit}) => {
             if(JSON.parse(sessionStorage.getItem('existingUser')).goals.length>0 && !edit){
               setIsGoalsDefined(true)
               setTimeout(()=>navigate("/dashboard"),2000)
+            }
+            if(edit){
+        
+              setUserGoals(JSON.parse(sessionStorage.getItem('existingUser')).goals[0])
             }
           }
           else{
@@ -92,7 +100,7 @@ const Goals = ({edit}) => {
             </div>
             <div className=" w-full flex justify-center">
               <div className="flex flex-col justify-center mt-[5vh]  w-auto md:w-[55%]">
-                <h3 className="text-2xl md:text-4xl mb-5">What's your goal?</h3>
+                <h3 className="text-2xl md:text-4xl mb-5">{edit?'Edit goals':"What's your goal?"}</h3>
              
                
                   <label htmlFor="name" className="mb-1 ">
@@ -105,6 +113,8 @@ const Goals = ({edit}) => {
                     className=" lg:text-lg py-3 px-1 pl-3 bg-slate-300 rounded mb-3 border border-black"
                     placeholder="Enter Calories"
                     onChange={(e)=>setUserGoals({...userGoals,calories:e.target.value})}
+                    value={edit?(userGoals.fats!=null?userGoals.calories:JSON.parse(sessionStorage.getItem('existingUser')).goals[0].calories*1):(userGoals.calories)}
+                    
                   />
                
                 
@@ -120,6 +130,8 @@ const Goals = ({edit}) => {
                         className=" lg:text-lg py-3 px-1 pl-3 bg-slate-300 rounded mb-3 border border-black w-full"
                         placeholder="Enter Calories"
                         onChange={(e)=>setUserGoals({...userGoals,protein:e.target.value})}
+                        value={edit?(userGoals.protein!=null?userGoals.protein:JSON.parse(sessionStorage.getItem('existingUser')).goals[0].protein*1):(userGoals.protein)}
+                        
                       />
                 </div>
                 <div>
@@ -132,7 +144,9 @@ const Goals = ({edit}) => {
                         
                         className=" lg:text-lg py-3 px-1 pl-3 bg-slate-300 rounded mb-3 border border-black w-full"
                         placeholder="Enter Calories"
-                        onChange={(e)=>setUserGoals({...userGoals,fats:e.target.value})}                      />
+                        onChange={(e)=>setUserGoals({...userGoals,fats:e.target.value})}   
+                        value={ edit?(userGoals.fats!=null?userGoals.fats:JSON.parse(sessionStorage.getItem('existingUser')).goals[0].fats*1):(userGoals.fats)}                   />
+                        
                 </div>
                 <div>
                     <label htmlFor="name" className="mb-1 ">
@@ -144,7 +158,9 @@ const Goals = ({edit}) => {
                         
                         className=" lg:text-lg py-3 px-1 pl-3 bg-slate-300 rounded mb-3 border border-black w-full"
                         placeholder="Enter Calories"
-                        onChange={(e)=>setUserGoals({...userGoals,carbs:e.target.value})}                      />
+                        onChange={(e)=>setUserGoals({...userGoals,carbs:e.target.value})}  
+                        value={edit?(userGoals.carbs!=null?userGoals.carbs:JSON.parse(sessionStorage.getItem('existingUser')).goals[0].carbs*1):(userGoals.carbs)}                    />
+                        
                 </div>
                
                 </div>

@@ -791,6 +791,13 @@ const handleButtonSaveChanges = async() =>{
 
   // const data = await result.json()
   // console.log(data)
+  // useEffect(()=>{
+  //   return()=>{
+  //     if(isQuantityUpdated)
+  //     handleButtonSaveChanges()
+  //     alert('Saved changes')
+  //   }
+  // },[])
 
 
 const [userMeals,setUserMeals] = useState({})
@@ -941,7 +948,7 @@ const [userMeals,setUserMeals] = useState({})
               </div>
             </div>
 
-            {isQuantityUpdated && <div className="flex justify-center mt-7 border -mb-5  ">
+            {isQuantityUpdated && <div className="flex justify-center mt-7  -mb-5  ">
                   <div className="rounded py-1 px-2 bg-[#2F4858] border border-2 border-black flex items-center gap-2">
                     <h2 className="bg-[#2F4858] text-white">Updates detected</h2>
                       <button className="btn rounded bg-[#EE973F] p-1" onClick={handleButtonSaveChanges}>Save changes</button>
