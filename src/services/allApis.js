@@ -58,3 +58,10 @@ export const FindUSDAFoodApi = async(datatype,searchval) =>{
 export const ChangeAfterUpdatedQuantityAPI = async(reqBody,reqheader) =>{
     return await commonApi('POST',`${serverUrl}/change-quantity-of-meals`,reqBody,reqheader)
 }
+export const PaymentsAPI = async(reqBody,reqheader) =>{
+    return await commonApi('POST',`${serverUrl}/payment`,reqBody,reqheader)
+}
+
+export const ExpireSessionAPI = async(reqBody,reqheader) =>{
+    return await commonApi('POST',`${serverUrl}/expire-session`,reqBody,reqheader)
+}

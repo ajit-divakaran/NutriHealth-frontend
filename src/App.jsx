@@ -7,6 +7,8 @@ import NutritionPage from './pages/NutritionPage'
 import AddRecipesPage from './pages/AddRecipesPage'
 import PageNotFound from './pages/PageNotFound'
 import Goals from './pages/Goals'
+import SuccessPaymentPage from './pages/SuccessPaymentPage'
+import CancelPaymentPage from './pages/CancelPaymentPage'
 
 function App() {
 
@@ -22,6 +24,8 @@ function App() {
       <Route path='/food-database' element={<AddRecipesPage/>}/>
       <Route path = '/goals' element={<Goals/>}/>
       <Route path = '/edit-goals' element={<Goals edit={true}/>}/>
+      <Route path = '/success' element={<SuccessPaymentPage/>}/>
+      <Route path = '/cancel' element={<CancelPaymentPage/>}/>
       <Route path='*' element={<PageNotFound/>}/>
      </Routes>
     </>

@@ -6,9 +6,11 @@ import { EditUserMealApi } from '../services/allApis'
 import { ToastContainer, toast } from 'react-toastify';
 
 
-const Diet = ({setQuantityChangedValues,setIsQuantityUpdated,setAnimation,setaddFood,setRefreshStatus,setMealTime,userMeals,head}) => {
+const Diet = ({mealTime,quantityChangedValues,setQuantityChangedValues,setIsQuantityUpdated,setAnimation,setaddFood,setRefreshStatus,setMealTime,userMeals,head}) => {
     // const [userDietMeals,setUserDietMeals] = useState(userMeals)
-    const [quantity,setQuantity] = useState({quantity:0,food_id:''})
+    const [currFoodId,setcurrFoodId] = useState({food_id:''})
+    const [currIndex,setCurrIndex] = useState(null)
+    console.log('Usermeal',userMeals)
     
     // const [editOpen, setEditOpen] = useState(false)
     const handleAdd = () =>{
@@ -57,33 +59,36 @@ const Diet = ({setQuantityChangedValues,setIsQuantityUpdated,setAnimation,setadd
         // setEditOpen(true)
     }
 
-    const calculateNutrition = (input,item) =>{
+    const updateTempUMeals = (input,item) =>{
         let mealtime = head.charAt(0).toLowerCase() + head.slice(1)
-        console.log('Mealtime', mealtime)
-        console.log('Calculate nutrition')
-        let newCal = item.calories
-        let newCarbs = item.carbs
-        let newPro = item.protein
-        let newFat = item.fat
-        console.log('Inside calculate quamtity', input)
+        setMealTime(mealtime)
+        // console.log('Mealtime', mealtime)
+        // console.log('Calculate nutrition')
+        // let newCal = item.calories
+        // let newCarbs = item.carbs
+        // let newPro = item.protein
+        // let newFat = item.fat
+        // console.log('Inside calculate quamtity', input)
         let obj = JSON.parse(sessionStorage.getItem("UsermealsToday"))
         const index = obj[mealtime].findIndex(x=>x.food_id==item.food_id)
+        setCurrIndex(index)
         if(index!==-1){        
-            // if(input > obj[mealtime][index].quantity){
-            newCal = (newCal/item.quantity)*input*1;
-            newCarbs = (newCarbs/item.quantity)*input*1;
-            newPro = (newPro/item.quantity)*input*1;
-            newFat = (newFat/item.quantity)*input*1;
+            //{ // if(input > obj[mealtime][index].quantity){
+            // newCal = (newCal/item.quantity)*input*1;
+            // newCarbs = (newCarbs/item.quantity)*input*1;
+            // newPro = (newPro/item.quantity)*input*1;
+            // newFat = (newFat/item.quantity)*input*1;
           
-            // console.log()
+            // // console.log()
             
            
                 obj[mealtime][index].quantity = input
-                obj[mealtime][index].calories = newCal.toFixed(2)*1
-                obj[mealtime][index].carbs = newCarbs.toFixed(2)*1
-                obj[mealtime][index].fat = newFat.toFixed(2)*1
-                obj[mealtime][index].protein = newPro.toFixed(2)*1
+            //     obj[mealtime][index].calories = newCal.toFixed(2)*1
+            //     obj[mealtime][index].carbs = newCarbs.toFixed(2)*1
+            //     obj[mealtime][index].fat = newFat.toFixed(2)*1
+            //     obj[mealtime][index].protein = newPro.toFixed(2)*1}
                 // sessionStorage.setItem('UsermealsToday',JSON.stringify(obj))
+
                 setQuantityChangedValues(obj)
                 console.log(obj)
                 setRefreshStatus(obj)
@@ -113,9 +118,9 @@ const Diet = ({setQuantityChangedValues,setIsQuantityUpdated,setAnimation,setadd
         const input = e.target.value
         console.log(typeof input)
         setIsQuantityUpdated(true)
-        setQuantity({quantity:input,food_id:item.food_id})
+        setcurrFoodId({food_id:item.food_id})
 
-        calculateNutrition(input,item)
+        updateTempUMeals(input,item)
     }
 
     // useEffect(()=>{
@@ -140,10 +145,21 @@ const Diet = ({setQuantityChangedValues,setIsQuantityUpdated,setAnimation,setadd
                 <div key={index} onClick={()=>handleClick(item)} className="flex meal mb-1 bg-[#b9aa87] rounded-lg py-2 px-4 justify-between w-[90vw] md:w-[100%]">
                     <div className=''>
                         <p>{item.food_name}</p>
-                        <h6 className='my-2'><input type="number" name="" id="" className='w-1/4 bg-white bg-opacity-[0.5] rounded' onChange={(e)=>handleQuantity(e,item)} value={quantity.quantity && quantity.food_id == item.food_id?quantity.quantity:item.quantity} min={1} step={0.5}/> x {item.customServing?item.customServing:item.serving} {!(item.serving.includes('(')) && item.serveUnit}</h6>
+                        {/* {Object.keys(quantityChangedValues).length?console.log(quantityChangedValues[mealTime][currIndex]):console.log('0')}// condition of quantity */}
+                        {/* quantityChangedValues.length?quantityChangedValues[mealTime][currIndex].quantity*1: */}
+                        {/* value={Object.keys(quantityChangedValues).length?quantityChangedValues[mealTime][currIndex].quantity*1:item.quantity} */}
+
+                        {/* console.log(item.serving) */}
+                        <h6 className='my-2'><input type="number" name="" id="" className='w-1/4 bg-white bg-opacity-[0.5] rounded' onChange={(e)=>handleQuantity(e,item)} value={(Object.keys(quantityChangedValues).length?(quantityChangedValues[mealTime][currIndex].quantity)*1:item.quantity)} min={1} step={0.5}/> x {item.customServing?item.customServing:item.serving} {!(item.serving.includes('(')) && item.serveUnit}</h6>
                     </div>
                     <div>
-                        <h6>{quantity.quantity && quantity.food_id == item.food_id?item.calories*quantity.quantity:item.calories*1} kcal</h6>
+                        {
+                        // console.log("Quantity id",quantity.food_id,"item.calories",item.calories)
+                        
+                        
+                        }
+                        {/* <h6>{Object.keys(quantityChangedValues).length && quantityChangedValues.food_id == item.food_id?(quantityChangedValues[mealTime][currIndex].quantity*1)*(quantityChangedValues[mealTime][currIndex].calories*1):item.calories*item.quantity*1} kcal</h6> */}
+                        <h6></h6>
                     </div>
                     <div>
                     <FontAwesomeIcon icon={faMultiply} className='ms-3'onClick={()=>handleMealItemClose(item)}/>

@@ -1,16 +1,19 @@
   import { useContext, useEffect,  useState } from "react";
 import Header from "../components/Header";
 import StatusBar from "../components/StatusBar";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+
 
 import { faCaretDown } from "@fortawesome/free-solid-svg-icons/faCaretDown";
 import Diet from "../components/Diet";
 import { addHeaderHeight, removeProfileDiv } from "../context/ContextShare";
 import { useNavigate } from "react-router-dom";
-import { AddSearchCacheFoodsApi, AddUSDAEditedImageApi, ChangeAfterUpdatedQuantityAPI, EditUserMealApi, FindUSDAFoodApi, GetSearchFoodsinAddrecipesApi, GetUserMealsOfTheDayApi } from "../services/allApis";
+import { AddSearchCacheFoodsApi, AddUSDAEditedImageApi, ChangeAfterUpdatedQuantityAPI, EditUserMealApi, FindUSDAFoodApi, GetSearchFoodsinAddrecipesApi, GetUserMealsOfTheDayApi, PaymentsAPI } from "../services/allApis";
 import axios from "axios";
 import { serverUrl } from "../services/serverUrl";
 import { toast, ToastContainer } from "react-toastify";
+import { loadStripe } from '@stripe/stripe-js';
+import { faCrown } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 // import NutriData from "../components/NutriData";
 
@@ -282,11 +285,30 @@ const handleMeasures = (item) =>{
 
   const handleAddMeal = async() =>{
     setAnimation(false)
-    const {food_id,food_name,serving,serveUnit,calories,carbs,protein,fat,foodimg,customServing} = USDACurrentDetails
-          if((serving=='Custom'&& !customServing) || (serving!='Custom' && !serving)){
+
+    let {food_id,food_name,serving,serveUnit,calories,carbs,protein,fat,foodimg,customServing} = USDACurrentDetails
+          if((serving =='Custom'&& !customServing) || (serving!='Custom' && !serving)){
             alert("Please Enter the serving")
           }
           else{
+            if(customServing){
+               carbs = (USDACurrentDetails.carbs/customServing)*100
+               fat = (USDACurrentDetails.fat/customServing)*100
+               protein = (USDACurrentDetails.protein/customServing)*100
+               calories = (USDACurrentDetails.calories/customServing)*100
+              // setUSDACurrentDetails(...USDACurrentDetails,carbs,fat,calories,protein)
+            }
+            else if(serveUnit!=='serving' && serving!=100){
+               carbs = (USDACurrentDetails.carbs/datasetMeasure)*100
+               fat = (USDACurrentDetails.fat/datasetMeasure)*100
+               protein = (USDACurrentDetails.protein/datasetMeasure)*100
+               calories = (USDACurrentDetails.calories/datasetMeasure)*100
+              // setUSDACurrentDetails(...USDACurrentDetails,carbs,fat,calories,protein)
+            }
+            else{
+              //
+            }
+            console.log('Calories sent',calories)
 
           console.log('Mealtime : ',mealTime)
           console.log('food id:',food_id)
@@ -632,12 +654,14 @@ const [isLoading,setIsLoading] = useState(true)
 
     
   }
+const[datasetMeasure,setDatasetMeasure] = useState(null)
 
 
   const handleInputCursorAndOptionChange = (e) =>{
     const selectedVal = e.target.value
     console.log(selectedVal)
       const selectedWeight = e.target.selectedOptions[0].dataset.weight;
+      setDatasetMeasure(selectedWeight)
       console.log(selectedWeight)
       calculateValues(selectedVal,selectedWeight)
     
@@ -721,37 +745,38 @@ const firstTimeUserMeals = async()=>{
 const [unsavedNutrition,setUnsavedNutrition] = useState({})
 
 // User Full nutrition
-const getCurrentGoalValues = () =>{
-  const data = sessionStorage.getItem('UsermealsToday')
-  console.log(data)
-  let calories = 0;
-  let protein = 0;
-  let fats = 0;
-  let carbs = 0;
-  let arr = Object.keys(quantityChangedValues).length?quantityChangedValues:JSON.parse(data)
-  if(arr){ 
+// const getCurrentGoalValues = () =>{
+//   const data = sessionStorage.getItem('UsermealsToday')
+//   console.log(data)
+//   let calories = 0;
+//   let protein = 0;
+//   let fats = 0;
+//   let carbs = 0;
+//   let arr = Object.keys(quantityChangedValues).length?quantityChangedValues:JSON.parse(data)
+//   if(arr){ 
    
-  for(let x in arr){
-    if(x=='breakfast' || x=='dinner' || x=='snacks' || x=='lunch'){
-      arr[x].forEach(p=>{
-        calories += p.calories!=='--'?p.calories*1:0;
-        protein += p.protein!=='--'?p.protein*1:0;
-        fats += p.fat!=='--'?p.fat*1:0;
-        carbs += p.carbs!=='--'?p.carbs*1:0;
+//   for(let x in arr){
+//     if(x=='breakfast' || x=='dinner' || x=='snacks' || x=='lunch'){
+//       arr[x].forEach(p=>{
+//         calories += p.calories!=='--'?p.calories*1:0;
+//         protein += p.protein!=='--'?p.protein*1:0;
+//         fats += p.fat!=='--'?p.fat*1:0;
+//         carbs += p.carbs!=='--'?p.carbs*1:0;
 
-      })
-      }  
-    }
-  }
-    let objdata = {calories:calories.toFixed(2)*1,protein:protein.toFixed(2)*1,fats:fats.toFixed(2)*1,carbs:carbs.toFixed(2)*1};
-    Object.keys(quantityChangedValues).length>0?setUnsavedNutrition(objdata): sessionStorage.setItem('usernutrition',JSON.stringify(objdata))
-    console.log('calories',calories)
-    console.log('protein',protein)
-    console.log('fats',fats)
-    console.log('carbs',carbs)
+//       })
+//       }  
+//     }
+//   }
+//     let objdata = {calories:calories.toFixed(2)*1,protein:protein.toFixed(2)*1,fats:fats.toFixed(2)*1,carbs:carbs.toFixed(2)*1};
+//     console.log(Object.keys(quantityChangedValues).length>0)
+//     Object.keys(quantityChangedValues).length>0?setUnsavedNutrition(objdata): sessionStorage.setItem('usernutrition',JSON.stringify(objdata))
+//     console.log('calories',calories)
+//     console.log('protein',protein)
+//     console.log('fats',fats)
+//     console.log('carbs',carbs)
 
-  }
-  console.log(quantityChangedValues,unsavedNutrition)
+//   }
+//   console.log(unsavedNutrition)
 
 
 useEffect(()=>{
@@ -779,6 +804,7 @@ const handleButtonSaveChanges = async() =>{
     setIsQuantityUpdated(false)
     setQuantityChangedValues({})
     setRefreshStatus(res.data)
+    setUnsavedNutrition({})
   }
   setAnimation(true)
   
@@ -786,9 +812,57 @@ const handleButtonSaveChanges = async() =>{
 
 
 
+const buyFunction = async() =>{
+  const stripe = await loadStripe("pk_test_51QjegEF5juGM9lQ5w6Y5beFOaRWRY6FZhuNhbTe4Tzs4CWUkI2MS6VsamfuzFrkH5Hf7qPuPGkmbprmVoIHPv7xe00OPqp8kvF");
+    const body = {
+        products:'Nutri Premium'
+    }
+    const token = sessionStorage.getItem('token')
+    const headers = {
+      "Content-Type":"application/json",
+      "Authorization":`Bearer ${token}`}
+
+    const response = await PaymentsAPI(body,headers)
 
 
+    // const session = await response.json();
 
+    console.log(response)
+
+    const result = await stripe.redirectToCheckout({
+        sessionId:response.data.id
+    });
+    
+    if(result.error){
+        console.log(result.error);
+    }
+    
+    // const urlParams = new URLSearchParams(window.location.search);
+    // const sessionId = urlParams.get('session_id');
+    // console.log(sessionId)
+    
+    // if (sessionId) {
+    // stripe.checkout.sessions.retrieve(sessionId).then(session => {
+    //     console.log("Client-side: Retrieved Session:", session);
+    //     if (session.payment_status === 'paid') {
+    //         //Update UI to show success
+    //         console.log('Paid')
+    //     }
+    //   }).catch(error => {
+    //     console.error("Client-side: Error retrieving session:", error);
+    //   });
+    // }
+  }
+const [isPremium,setIsPremium] = useState(false)
+const getPaidStatus = ()=>{
+  if(JSON.parse(sessionStorage.getItem('existingUser')).payment_status == 'paid'){
+    console.log('User has paid')
+    setIsPremium(true)
+  }
+  else{
+    console.log('User NOT PAID')
+  }
+}
   // const data = await result.json()
   // console.log(data)
   // useEffect(()=>{
@@ -798,6 +872,34 @@ const handleButtonSaveChanges = async() =>{
   //     alert('Saved changes')
   //   }
   // },[])
+
+  const getCurrentGoalValues = () =>{
+    console.log(quantityChangedValues)
+      let calories = 0;
+    let protein = 0;
+    let fats = 0;
+      let carbs = 0;
+    for(let x in quantityChangedValues){
+      if(x=='breakfast'|| x=='lunch'||x=='dinner'|| x=='snacks'){
+        if(quantityChangedValues[x].length>0){
+          quantityChangedValues[x].forEach(item=>{
+            calories+=(item.calories!=='--'?item.calories:0)*(item.quantity*1)
+            protein+=(item.protein!=='--'?item.protein:0)*(item.quantity*1)
+            fats+=(item.fat!=='--'?item.fat:0)*(item.quantity*1)
+            carbs+=(item.carbs!=='--'?item.carbs:0)*(item.quantity*1)
+
+          }
+            )
+
+        }
+      }
+    }
+    let objdata = {calories:calories.toFixed(2)*1,protein:protein.toFixed(2)*1,fats:fats.toFixed(2)*1,carbs:carbs.toFixed(2)*1};
+    setUnsavedNutrition(objdata)
+    console.log(calories,protein,fats,carbs)
+
+
+  }
 
 
 const [userMeals,setUserMeals] = useState({})
@@ -809,6 +911,7 @@ const [userMeals,setUserMeals] = useState({})
       getCurrentGoalValues()
       getChangedImages()
       adjustRightDivHeight();
+      getPaidStatus();
       let data = sessionStorage.getItem("UsermealsToday")
       if(data){
         data = JSON.parse(sessionStorage.getItem("UsermealsToday"))
@@ -867,8 +970,8 @@ const [userMeals,setUserMeals] = useState({})
                     max={new Date().toISOString().split('T')[0]}
                   />
                   {type == "text" && (
-                    <FontAwesomeIcon
-                      onClick={clickIn}
+                    < FontAwesomeIcon
+                     onClick={clickIn}
                       onBlur={clickOut}
                       icon={faCaretDown}
                       className="md:ms-2 -ms-[2.5rem]"
@@ -966,11 +1069,24 @@ const [userMeals,setUserMeals] = useState({})
           </div> */}
          
          <div className="added-meals w-100 mt-[5rem] grid grid-cols-1 md:grid-cols-3 gap-x-[3rem]">
-              <Diet setQuantityChangedValues = {setQuantityChangedValues} setIsQuantityUpdated={setIsQuantityUpdated} setAnimation = {setAnimation} setaddFood = {setaddFood} setRefreshStatus={setRefreshStatus} setMealTime={setMealTime} userMeals={userMeals.breakfast??[]} head={"Breakfast"} />
-              <Diet setQuantityChangedValues = {setQuantityChangedValues} setIsQuantityUpdated={setIsQuantityUpdated} setAnimation = {setAnimation} setaddFood = {setaddFood} setRefreshStatus={setRefreshStatus} head={"Lunch"}  userMeals={userMeals.lunch??[]} setMealTime={setMealTime}/>
-              <Diet setQuantityChangedValues = {setQuantityChangedValues} setIsQuantityUpdated={setIsQuantityUpdated} setAnimation = {setAnimation} setaddFood = {setaddFood} setRefreshStatus={setRefreshStatus} head={"Dinner"}  userMeals={userMeals.dinner??[]} setMealTime={setMealTime} />
-              <Diet setQuantityChangedValues = {setQuantityChangedValues} setIsQuantityUpdated={setIsQuantityUpdated} setAnimation = {setAnimation} setaddFood = {setaddFood} setRefreshStatus={setRefreshStatus} head={"Snacks"}  userMeals={userMeals.snacks??[]} setMealTime={setMealTime} />
+              <Diet mealTime = {mealTime} quantityChangedValues={quantityChangedValues} setQuantityChangedValues = {setQuantityChangedValues} setIsQuantityUpdated={setIsQuantityUpdated} setAnimation = {setAnimation} setaddFood = {setaddFood} setRefreshStatus={setRefreshStatus} setMealTime={setMealTime} userMeals={userMeals.breakfast??[]} head={"Breakfast"} />
+              <Diet mealTime = {mealTime} quantityChangedValues={quantityChangedValues} setQuantityChangedValues = {setQuantityChangedValues} setIsQuantityUpdated={setIsQuantityUpdated} setAnimation = {setAnimation} setaddFood = {setaddFood} setRefreshStatus={setRefreshStatus} head={"Lunch"}  userMeals={userMeals.lunch??[]} setMealTime={setMealTime}/>
+              <Diet mealTime = {mealTime} quantityChangedValues={quantityChangedValues} setQuantityChangedValues = {setQuantityChangedValues} setIsQuantityUpdated={setIsQuantityUpdated} setAnimation = {setAnimation} setaddFood = {setaddFood} setRefreshStatus={setRefreshStatus} head={"Dinner"}  userMeals={userMeals.dinner??[]} setMealTime={setMealTime} />
+              <Diet mealTime = {mealTime} quantityChangedValues={quantityChangedValues} setQuantityChangedValues = {setQuantityChangedValues} setIsQuantityUpdated={setIsQuantityUpdated} setAnimation = {setAnimation} setaddFood = {setaddFood} setRefreshStatus={setRefreshStatus} head={"Snacks"}  userMeals={userMeals.snacks??[]} setMealTime={setMealTime} />
             </div>
+{ !isPremium ? <div className=" flex justify-center mb-20">
+          <button onClick={buyFunction} className="bg-[#ffb643] px-3 py-2 rounded shadow-lg border-[#616161]"><FontAwesomeIcon icon={faCrown} style={{color: "#fbf7f1"}} className="me-3 scale-125" />Get Detailed Nutrition Summary</button>
+          </div>:
+          <div>
+            <h1>Micronutrients</h1>
+            <hr className="mb-4 border-[1px] border-slate-400 " />
+                   <div className="flex justify-between mb-1">
+                  <p className="text-sm">Fats</p>
+                  <p className="text-sm">{JSON.parse(sessionStorage.getItem('usernutrition'))?(Object.keys(quantityChangedValues).length?unsavedNutrition.fats:JSON.parse(sessionStorage.getItem('usernutrition')).fats):0} g</p>
+                </div>
+                <StatusBar animation={animation} small={true} curr={JSON.parse(sessionStorage.getItem('usernutrition'))?(Object.keys(quantityChangedValues).length?unsavedNutrition.fats:JSON.parse(sessionStorage.getItem('usernutrition')).fats):1} total={goals.fats} />
+                <div style={{ height: "10px" }}></div>
+            </div>}
           </div>
         </div>
       ) : (
@@ -1209,6 +1325,8 @@ const [userMeals,setUserMeals] = useState({})
 
         </div>
       )}
+
+     
     <ToastContainer theme='dark' position="top-center" autoClose={2000} />
     </div>
   );
