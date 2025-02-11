@@ -4,7 +4,7 @@ import { DeleteUserFoodApi, EditUserRecipeApi } from "../services/allApis";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTrashAlt } from "@fortawesome/free-solid-svg-icons";
 
-const Card = ({fooditem,userrecipe,setRefreshStatus}) => {
+const Card = ({fooditem,setRefreshStatus}) => {
   // const [editisClicked,setEditIsClicked]
   const [isOpen, setIsOpen] = useState(false);
   const [preview,setPreview] = useState(null);
@@ -110,14 +110,21 @@ document.body.style.overflow = "auto"
   return (
   
     <div className="card bg-white rounded-lg shadow-lg overflow-hidden relative hover:shadow-[#769b73]" >
-{     userrecipe && <div>
+{/* {     userrecipe &&  */}
+<div>
   <div className="edit rounded-full px-2 py-1 bg-[#ffffffe7] absolute -top-[40px] left-[10px] text-black border border-black hover:cursor-pointer hover:bg-[#ce825e] " onClick={openModal}>Edit Recipe</div>
   <div className="edit trashcolor absolute right-[15px] -top-[40px] bg-[#ffffffe7] px-3 py-1 rounded hover:bg-red-500"><FontAwesomeIcon icon={faTrashAlt} className=" icon text-black" onClick={handleDelete}/></div>
   </div>
-}
+{/* } */}
 
  <img
-    src={userrecipe?`${serverUrl}/upload/${fooditem.foodimg}`:fooditem.foodimg}
+    src={
+      fooditem.userId
+      ?
+      `${serverUrl}/upload/${fooditem.foodimg}`
+    :
+    fooditem.foodimg
+  }
     alt=""
     className="w-full up-down h-[175px]"
     
@@ -166,7 +173,7 @@ document.body.style.overflow = "auto"
                       Select image
                       <input type="file" id="foodImage" className="hidden border" onChange={handleImg} />
                       {console.log(fooditem.foodimg)}
-                      <img src={preview?preview:`${serverUrl}/upload/${fooditem.foodimg}`} alt="" className="h-[180px]" />
+                      <img src={preview?preview:(fooditem.userId?`${serverUrl}/upload/${fooditem.foodimg}`:fooditem.foodimg)} alt="" className="h-[180px]" />
                     </label>
                   </div>
                   <div className="flex items-center mt-2">

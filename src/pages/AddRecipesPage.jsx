@@ -15,7 +15,8 @@ import {
 const AddRecipesPage = () => {
   const { headHeight } = useContext(addHeaderHeight);
   const { show, setShow, setShowgoal } = useContext(removeProfileDiv);
-  const [allrecipes, setAllrecipes] = useState([]);
+  const [generalRecipes, setgeneralRecipes] = useState([]);
+  const [currRecipes,setCurrRecipes] = useState([])
   const [alluserrecipes, setAlluserrecipes] = useState([]);
   const [preview,setPreview] = useState(null)
   const [refreshStatus,setRefreshStatus] = useState({})
@@ -89,10 +90,10 @@ const AddRecipesPage = () => {
     console.log(result);
     if (result.status == 200) {
       const arr = result.data.allfoods;
-      const dbfood = arr.filter((x) => x.userId != id);
-      setAllrecipes(dbfood);
-      console.log(allrecipes);
-      const userfood = result.data.allfoods.filter((x) => x.userId == id);
+      // const dbfood = arr.filter((x) => x.userId != id);
+      setgeneralRecipes(result.data.allfoods);
+      console.log(generalRecipes);
+      const userfood = arr.filter((x) => x.userId == id);
       setAlluserrecipes(userfood);
       console.log(userfood);
     } else {
@@ -103,13 +104,23 @@ const AddRecipesPage = () => {
   const handleSearch = async (e) => {
     const search = e.target.value.trim();
     console.log(search);
-    const result = await GetSearchFoodsinAddrecipesApi(search);
+    const token= sessionStorage.getItem('token')
+    const reqHeader = {
+    "Content-type": "multipart/form-data",
+   " Authorization": `Bearer ${token}`,
+  };
+    if(search.length){
+      const result = await GetSearchFoodsinAddrecipesApi(search,reqHeader);
     console.log(result);
     if (result.status == 200) {
-      setAllrecipes(result.data);
+      setCurrRecipes(result.data);
     } else {
       alert("Something went wrong");
     }
+  }
+  else{
+    setCurrRecipes([])
+  }
   };
 
   const handleAdd = async() => {
@@ -176,7 +187,7 @@ const AddRecipesPage = () => {
         onClick={closeProfile}
       >
         <div className="flex justify-center gap-x-2 w-full">
-          <div className="relative input-field">
+          {/* <div className="relative input-field">
             <input
               type="text"
               placeholder="Search foods here"
@@ -188,7 +199,7 @@ const AddRecipesPage = () => {
               alt="search"
               className="absolute right-5 top-4 w-[21px]"
             />
-          </div>
+          </div> */}
           <button
             className="bg-transparent text-black hidden md:block hover:text-white hover:bg-black border border-black rounded-md px-2 ml-5 "
             onClick={openModal}
@@ -205,27 +216,37 @@ const AddRecipesPage = () => {
         </div>
 
         <div className=" flex flex-col items-center w-auto pb-40">
-          {allrecipes?.length > 0 ? (
-            <div className="w-[70%] lg:w-[90%] grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-8 mt-8 mb-20">
-              {allrecipes.map((item) => (
-                <Card key={item} fooditem={item} />
-              ))}
-            </div>
-          ) : (
-            <h1 className="text-center mt-5">No Data to show</h1>
-          )}
-
-          {alluserrecipes.length > 0 && (
-            <>
-              <h1 className="text-2xl w-[70%] lg:w-[90%]">User recipes</h1>
-              <hr />
-              <div className="w-[70%] lg:w-[90%] grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-8 mt-8">
-                {alluserrecipes.map((item) => (
-                  <Card key={item} fooditem={item} userrecipe={true} setRefreshStatus={setRefreshStatus} />
-                ))}
-              </div>
-            </>
-          )}
+        {/* {currRecipes.length > 0 ? (
+        <div className="w-[70%] lg:w-[90%] grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-8 mt-8 mb-20">
+          {currRecipes.map((item, index) => (
+            <Card key={index} fooditem={item} />
+          ))}
+        </div>
+      ) : alluserrecipes.length > 0 || generalRecipes.length > 0 ? (
+        <div className="w-[70%] lg:w-[90%] grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-8 mt-8 mb-20">
+          {alluserrecipes.length > 0 &&
+            alluserrecipes.map((item, index) => (
+              <Card key={`user-${index}`} fooditem={item} />
+            ))}
+          {generalRecipes.length > 0 &&
+            generalRecipes.map((item, index) => (
+              <Card key={`general-${index}`} fooditem={item} />
+            ))}
+        </div>
+      ) : (
+        <div className="w-full text-center mt-8">
+          <p className="text-lg font-semibold text-gray-500">No Data Found</p>
+        </div>
+      )} */}
+      <div className="w-[70%] lg:w-[90%] grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-8 mt-8 mb-20">
+      {generalRecipes.length?
+       generalRecipes.map((item, index) => (
+        <Card key={`general-${index}`} fooditem={item} setRefreshStatus={setRefreshStatus} />
+      ))
+      :<h3>No Data Found</h3>}
+      </div>
+{      console.log(generalRecipes)
+}
 
           {isOpen && (
             <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
