@@ -6,10 +6,12 @@ import { EditUserMealApi } from '../services/allApis'
 import { ToastContainer, toast } from 'react-toastify';
 
 
-const Diet = ({mealTime,quantityChangedValues,setQuantityChangedValues,setIsQuantityUpdated,setAnimation,setaddFood,setRefreshStatus,setMealTime,userMeals,head}) => {
+const Diet = ({mealTime,isQuantityUpdated,quantityChangedValues,setQuantityChangedValues,setIsQuantityUpdated,setAnimation,setaddFood,setRefreshStatus,setMealTime,userMeals,head,ConditionNutrientCalculator}) => {
     // const [userDietMeals,setUserDietMeals] = useState(userMeals)
     const [currFoodId,setcurrFoodId] = useState({food_id:''})
-    const [currIndex,setCurrIndex] = useState(null)
+    const [currIndex,setCurrIndex] = useState()
+    const [currInputId,setCurrInputId] = useState('')
+    const [currInputMeal,setCurrInputMeal] = useState('')
     console.log('Usermeal',userMeals)
     
     // const [editOpen, setEditOpen] = useState(false)
@@ -60,8 +62,19 @@ const Diet = ({mealTime,quantityChangedValues,setQuantityChangedValues,setIsQuan
     }
 
     const updateTempUMeals = (input,item) =>{
-        let mealtime = head.charAt(0).toLowerCase() + head.slice(1)
-        setMealTime(mealtime)
+        // let mealtime = head.charAt(0).toLowerCase() + head.slice(1)
+        // setMealTime(mealtime)
+        let obj = JSON.parse(sessionStorage.getItem("UsermealsToday"))
+        const index = obj[item.mealtime].findIndex(x=>x.food_id==item.food_id)
+        console.log('index',index)
+        setCurrIndex(index)
+        if(index!==-1){        
+            obj[item.mealtime][index].quantity = input
+            setQuantityChangedValues(obj)
+            console.log(obj)
+            // setRefreshStatus(obj)
+            setAnimation(true)
+
         // console.log('Mealtime', mealtime)
         // console.log('Calculate nutrition')
         // let newCal = item.calories
@@ -69,10 +82,6 @@ const Diet = ({mealTime,quantityChangedValues,setQuantityChangedValues,setIsQuan
         // let newPro = item.protein
         // let newFat = item.fat
         // console.log('Inside calculate quamtity', input)
-        let obj = JSON.parse(sessionStorage.getItem("UsermealsToday"))
-        const index = obj[mealtime].findIndex(x=>x.food_id==item.food_id)
-        setCurrIndex(index)
-        if(index!==-1){        
             //{ // if(input > obj[mealtime][index].quantity){
             // newCal = (newCal/item.quantity)*input*1;
             // newCarbs = (newCarbs/item.quantity)*input*1;
@@ -82,17 +91,12 @@ const Diet = ({mealTime,quantityChangedValues,setQuantityChangedValues,setIsQuan
             // // console.log()
             
            
-                obj[mealtime][index].quantity = input
             //     obj[mealtime][index].calories = newCal.toFixed(2)*1
             //     obj[mealtime][index].carbs = newCarbs.toFixed(2)*1
             //     obj[mealtime][index].fat = newFat.toFixed(2)*1
             //     obj[mealtime][index].protein = newPro.toFixed(2)*1}
                 // sessionStorage.setItem('UsermealsToday',JSON.stringify(obj))
 
-                setQuantityChangedValues(obj)
-                console.log(obj)
-                setRefreshStatus(obj)
-                setAnimation(true)
                 // console.log(obj[index].quantity,obj)
         
             // }
@@ -116,11 +120,33 @@ const Diet = ({mealTime,quantityChangedValues,setQuantityChangedValues,setIsQuan
 
     const handleQuantity = (e,item) =>{
         const input = e.target.value
+        const id = e.target.id
+        console.log(id,'Input',input)
+        setCurrInputId(id)
+        setCurrInputMeal(item.mealtime)
         console.log(typeof input)
         setIsQuantityUpdated(true)
         setcurrFoodId({food_id:item.food_id})
 
         updateTempUMeals(input,item)
+    }
+
+    const handleCal = (item,index) =>{
+        let tempCal = item.calories
+        if(item.customServing){
+            tempCal = (tempCal*item.customServing)/100
+        }
+        else if(item.serveUnit=='serving'){
+            tempCal = tempCal*item.serving
+        }
+        else{
+            tempCal = (tempCal*item.serving)/100
+        }
+
+        if(Object.keys(quantityChangedValues).length>0){
+            tempCal = ((tempCal*item.customServing)/100)*(quantityChangedValues[item.mealtime][index].quantity*1)
+        }
+        return tempCal + 'kcal'
     }
 
     // useEffect(()=>{
@@ -148,9 +174,14 @@ const Diet = ({mealTime,quantityChangedValues,setQuantityChangedValues,setIsQuan
                         {/* {Object.keys(quantityChangedValues).length?console.log(quantityChangedValues[mealTime][currIndex]):console.log('0')}// condition of quantity */}
                         {/* quantityChangedValues.length?quantityChangedValues[mealTime][currIndex].quantity*1: */}
                         {/* value={Object.keys(quantityChangedValues).length?quantityChangedValues[mealTime][currIndex].quantity*1:item.quantity} */}
-
-                        {/* console.log(item.serving) */}
-                        <h6 className='my-2'><input type="number" name="" id="" className='w-1/4 bg-white bg-opacity-[0.5] rounded' onChange={(e)=>handleQuantity(e,item)} value={(Object.keys(quantityChangedValues).length?(quantityChangedValues[mealTime][currIndex].quantity)*1:item.quantity)} min={1} step={0.5}/> x {item.customServing?item.customServing:item.serving} {!(item.serving.includes('(')) && item.serveUnit}</h6>
+                        {/* {console.log(item.mealtime)}
+                        {console.log(Object.keys(quantityChangedValues).length>0?quantityChangedValues[item.mealTime]:'hello')} */}
+                        {console.log(item.quantity)}
+                        <h6 className='my-2'><input type="number" name="" id={index} className='w-1/4 bg-white bg-opacity-[0.5] rounded' onChange={(e)=>handleQuantity(e,item)} value={Object.keys(quantityChangedValues).length>0?quantityChangedValues[item.mealtime][index].quantity:item.quantity*1} min={1} step={0.5}/> x {
+                        item.customServing?
+                        (item.serving.split('-')[1]=='foodMeasure'?item.serving.split('-')[0]:item.customServing)
+                        :item.serving
+                        } {!(item.serving.includes('(')) && item.serveUnit}</h6>
                     </div>
                     <div>
                         {
@@ -158,8 +189,12 @@ const Diet = ({mealTime,quantityChangedValues,setQuantityChangedValues,setIsQuan
                         
                         
                         }
+          
                         {/* <h6>{Object.keys(quantityChangedValues).length && quantityChangedValues.food_id == item.food_id?(quantityChangedValues[mealTime][currIndex].quantity*1)*(quantityChangedValues[mealTime][currIndex].calories*1):item.calories*item.quantity*1} kcal</h6> */}
-                        <h6></h6>
+
+                        {/* <h6>{Object.keys(quantityChangedValues).length>0? currIndex==index && handleCal(item,index):item.calories*(item.quantity*1)}</h6> */}
+                        <h6>{(ConditionNutrientCalculator(index,item,'calories')*1).toFixed(2)} kcal</h6>
+                        {/* <h6>{isQuantityUpdated && currIndex==index &&}</h6> */}
                     </div>
                     <div>
                     <FontAwesomeIcon icon={faMultiply} className='ms-3'onClick={()=>handleMealItemClose(item)}/>

@@ -66,7 +66,10 @@ const NutritionPage = () => {
     fat:'',
     carbs:'',
     customServing:'',
-    foodimg:''
+    foodimg:'',
+    vitaminC:'',
+    vitaminD:'',
+    iron:''
   })
 
   const [isMeasuresPresent,setIsMeasuresPresent] = useState(null)
@@ -143,6 +146,8 @@ const calculateValues = (serving,weight) =>{
   let newCarbs = ''
   let newFats = ''
   let newProtein = ''
+  let foodMeasureServing = false
+  let foodMeasureWeight = 0
   console.log(currentUSDA)
 
     if(weight && !(currentUSDA.serveUnit=='serving') )
@@ -159,8 +164,20 @@ const calculateValues = (serving,weight) =>{
     }
     console.log("New cal",newCalories)
 
+    if(serving.split('-')[1]=='foodMeasure'){
+      foodMeasureServing = true
 
-    setUSDACurrentDetails({...USDACurrentDetails,serving:serving,calories:newCalories,carbs:newCarbs,fat:newFats,protein:newProtein,customServing:serving=='Custom'?weight:''})
+      const startIndex = serving.lastIndexOf('(')
+      const endIndex = serving.lastIndexOf(')')
+      const res = serving.slice(startIndex+1,endIndex-1)
+      const regex = /\d+/;
+      const result = res.match(regex);
+      foodMeasureWeight = result[0]
+      // serving = serving.split('-')[0]
+    }
+
+
+    setUSDACurrentDetails({...USDACurrentDetails,serving:serving,calories:newCalories,carbs:newCarbs,fat:newFats,protein:newProtein,customServing:serving=='Custom'?weight:(foodMeasureServing?foodMeasureWeight:'')})
     // console.log(USDACurrentDetails)
 }
 
@@ -170,23 +187,32 @@ const firstCalculate = (details,weight) =>{
   let newCarbs = ''
   let newFats = ''
   let newProtein = ''
+  let newvitaminC = ''
+  let newvitaminD = ''
+  let newiron = ''
   console.log(details)
-  console.log(details.calories,weight,(details.calories*weight)/100)
+  console.log(details.vitaminC.slice(0,-2))
     if(weight && !(details.serveUnit=='serving') )
     { newCalories = ((details.calories*weight)/100).toFixed(2)
      newCarbs = ((details.carbs*weight)/100).toFixed(2)
      newFats = ((details.fat*weight)/100).toFixed(2)
-     newProtein = ((details.protein*weight)/100).toFixed(2)}
+     newProtein = ((details.protein*weight)/100).toFixed(2)
+     newvitaminC = ((details.vitaminC.slice(0,-2)*weight)/100).toFixed(2)
+     newvitaminD = ((details.vitaminD*weight)/100).toFixed(2)
+     newiron = ((details.iron*weight)/100).toFixed(2)}
     
     if(details.serveUnit=='serving'){
       newCalories = details.calories*weight
      newCarbs = details.carbs*weight
      newFats = details.fat*weight
      newProtein = details.protein*weight
+     newvitaminC = details.vitaminC*weight
+     newvitaminD = details.vitaminD*weight
+     newiron = details.iron*weight
     }
     console.log("New cal",newCalories)
 
-    setUSDACurrentDetails({food_id:details.food_id,food_name:details.food_name,serving:details.serving,customServing:'',serveUnit:details.serveUnit,calories:newCalories,carbs:newCarbs,fat:newFats,protein:newProtein,foodimg:details.foodimg})
+    setUSDACurrentDetails({food_id:details.food_id,food_name:details.food_name,serving:details.serving+'-foodMeasure',customServing:weight,serveUnit:details.serveUnit,calories:newCalories,carbs:newCarbs,fat:newFats,protein:newProtein,foodimg:details.foodimg,vitaminC:newvitaminC,vitaminD:newvitaminD,iron:newiron})
 }
 
 const handleMeasures = (item) =>{
@@ -209,6 +235,7 @@ const handleMeasures = (item) =>{
       setFDCid(null)
     }
     adjustRightDivHeight();
+    console.log(item)
     console.log(item.foodimg)
     console.log(item.serving?item.serving:(item.foodMeasures.length>0?handleMeasures(item.foodMeasures):100))
     const check = isChangedImage.findIndex(x=>x.fdcId==item.fdcId)
@@ -231,7 +258,13 @@ const handleMeasures = (item) =>{
       
       customServing:'',
       
-      foodimg:item.foodimg?`${serverUrl}/upload/${item.foodimg}`:(check!== -1?`${serverUrl}/upload/${isChangedImage[check].foodimg}` :await fetchPexelsData(item.description))
+      foodimg:item.foodimg?`${serverUrl}/upload/${item.foodimg}`:(check!== -1?`${serverUrl}/upload/${isChangedImage[check].foodimg}` :await fetchPexelsData(item.description)),
+
+      vitaminC:item.vitaminC == 0? 0: item.vitaminC ?? (item.foodNutrients.find(x=>x.nutrientId==1104)?item.foodNutrients.filter(x=>x.nutrientId==1104)[0].value:'--')+'IU',//1104 unitName IU
+
+      vitaminD:item.vitaminD == 0? 0: item.vitaminD ?? (item.foodNutrients.find(x=>x.nutrientId==1114)?item.foodNutrients.filter(x=>x.nutrientId==1114)[0].value:'--')+'UG',//1114 UG
+
+      iron:item.iron == 0? 0: item.iron ?? (item.foodNutrients.find(x=>x.nutrientId==1089)?item.foodNutrients.filter(x=>x.nutrientId==1089)[0].value:'--')+'mg' //1089 unitName MG
     }
     console.log(typeof details.serving)
     console.log(details)
@@ -283,140 +316,7 @@ const handleMeasures = (item) =>{
 
   const [animation,setAnimation] = useState(false)
 
-  const handleAddMeal = async() =>{
-    setAnimation(false)
 
-    let {food_id,food_name,serving,serveUnit,calories,carbs,protein,fat,foodimg,customServing} = USDACurrentDetails
-          if((serving =='Custom'&& !customServing) || (serving!='Custom' && !serving)){
-            alert("Please Enter the serving")
-          }
-          else{
-            if(customServing){
-               carbs = (USDACurrentDetails.carbs/customServing)*100
-               fat = (USDACurrentDetails.fat/customServing)*100
-               protein = (USDACurrentDetails.protein/customServing)*100
-               calories = (USDACurrentDetails.calories/customServing)*100
-              // setUSDACurrentDetails(...USDACurrentDetails,carbs,fat,calories,protein)
-            }
-            else if(serveUnit!=='serving' && serving!=100){
-               carbs = (USDACurrentDetails.carbs/datasetMeasure)*100
-               fat = (USDACurrentDetails.fat/datasetMeasure)*100
-               protein = (USDACurrentDetails.protein/datasetMeasure)*100
-               calories = (USDACurrentDetails.calories/datasetMeasure)*100
-              // setUSDACurrentDetails(...USDACurrentDetails,carbs,fat,calories,protein)
-            }
-            else{
-              //
-            }
-            console.log('Calories sent',calories)
-
-          console.log('Mealtime : ',mealTime)
-          console.log('food id:',food_id)
-          const reqBody = new FormData()
-          reqBody.append('food_id',food_id)
-          reqBody.append('food_name',food_name)
-          reqBody.append('calories',calories)
-          reqBody.append('serving',serving)
-          reqBody.append('serveUnit',serveUnit)
-          reqBody.append('protein',protein)
-          reqBody.append('fat',fat)
-          reqBody.append('carbs',carbs)
-          reqBody.append('mealtime',mealTime)
-          reqBody.append('date',userDate)
-          reqBody.append('customServing',customServing)
-          reqBody.append('quantity',1)
-
-          if(foodimg instanceof File){
-            console.log('Instance of file')
-            reqBody.append('foodimg',foodimg)
-          }
-          else{
-            reqBody.append('foodimg',foodimg)
-          }
-
-          console.log(reqBody)
-
-
-          const token= sessionStorage.getItem('token')
-          console.log(token)
-            const reqHeader = {
-            "Content-type": "multipart/form-data",
-           "Authorization": `Bearer ${token}`,
-          };
-      
-          const result = await EditUserMealApi('edit',reqBody,reqHeader)          
-          console.log("Edit user meal",result)
-          if(result.status == 200){
-              setRefreshStatus(result)
-              // toast.success(`Added meal to ${mealTime}`)
-              alert('Added meal successfully')
-              sessionStorage.setItem('UsermealsToday',JSON.stringify(result.data))
-              setUserMeals(JSON.parse(sessionStorage.getItem('UsermealsToday')))
-              console.log("Preview image",previewImg)
-              if(previewImg)
-                {
-                 const reqbod = new FormData()
-                 reqbod.append('fdcId',FDCid)
-                 reqbod.append('foodimg',USDACurrentDetails.foodimg)  
-                  
-                 const res = await AddUSDAEditedImageApi(reqbod,reqHeader)
-                 console.log("changedimage",res)
-                if(res.status==200){
-                console.log('Updated user changedImage')
-                // const obj = JSON.parse(sessionStorage.getItem('existingUser'))
-                // obj.changedImages = 
-                console.log(res.data.existingUser)
-                sessionStorage.setItem('existingUser',JSON.stringify(res.data.existingUser))
-              }
-            }
-            setSearchInnateList([])
-            setSearchlist([])
-            setInputValue('')
-            setShowFoodClick(false)
-            setUSDACurrentDetails({
-              food_id:'',
-              food_name:'',
-              serving:'',
-              serveUnit:'',
-              calories:'',
-              protein:'',
-              fat:'',
-              carbs:'',
-              foodimg:''
-            })
-              setaddFood(false)
-              setAnimation(true)
-
-
-
-          }
-          else{
-            alert('Oops something went wrong')
-            setSearchInnateList([])
-            setSearchlist([])
-            setInputValue('')
-            setShowFoodClick(false)
-            setUSDACurrentDetails({
-              food_id:'',
-              food_name:'',
-              serving:'',
-              serveUnit:'',
-              calories:'',
-              protein:'',
-              fat:'',
-              carbs:'',
-              foodimg:''
-            })
-              setaddFood(false)
-              setAnimation(true)
-          }
-
-
-        }
-
-    
-
-  }
 
 const [isLoading,setIsLoading] = useState(true)
  // useeffect for api call with delay
@@ -654,14 +554,14 @@ const [isLoading,setIsLoading] = useState(true)
 
     
   }
-const[datasetMeasure,setDatasetMeasure] = useState(null)
+// const[datasetMeasure,setDatasetMeasure] = useState(null)
 
 
   const handleInputCursorAndOptionChange = (e) =>{
-    const selectedVal = e.target.value
+    const selectedVal = e.target.value!=='Custom'?e.target.value + '-foodMeasure':'Custom'
     console.log(selectedVal)
       const selectedWeight = e.target.selectedOptions[0].dataset.weight;
-      setDatasetMeasure(selectedWeight)
+      // setDatasetMeasure(selectedWeight)
       console.log(selectedWeight)
       calculateValues(selectedVal,selectedWeight)
     
@@ -742,41 +642,9 @@ const firstTimeUserMeals = async()=>{
   setAnimation(true)
 }
 
-const [unsavedNutrition,setUnsavedNutrition] = useState({})
+const [currentNutrition,setCurrentNutrition] = useState({})
 
-// User Full nutrition
-// const getCurrentGoalValues = () =>{
-//   const data = sessionStorage.getItem('UsermealsToday')
-//   console.log(data)
-//   let calories = 0;
-//   let protein = 0;
-//   let fats = 0;
-//   let carbs = 0;
-//   let arr = Object.keys(quantityChangedValues).length?quantityChangedValues:JSON.parse(data)
-//   if(arr){ 
-   
-//   for(let x in arr){
-//     if(x=='breakfast' || x=='dinner' || x=='snacks' || x=='lunch'){
-//       arr[x].forEach(p=>{
-//         calories += p.calories!=='--'?p.calories*1:0;
-//         protein += p.protein!=='--'?p.protein*1:0;
-//         fats += p.fat!=='--'?p.fat*1:0;
-//         carbs += p.carbs!=='--'?p.carbs*1:0;
 
-//       })
-//       }  
-//     }
-//   }
-//     let objdata = {calories:calories.toFixed(2)*1,protein:protein.toFixed(2)*1,fats:fats.toFixed(2)*1,carbs:carbs.toFixed(2)*1};
-//     console.log(Object.keys(quantityChangedValues).length>0)
-//     Object.keys(quantityChangedValues).length>0?setUnsavedNutrition(objdata): sessionStorage.setItem('usernutrition',JSON.stringify(objdata))
-//     console.log('calories',calories)
-//     console.log('protein',protein)
-//     console.log('fats',fats)
-//     console.log('carbs',carbs)
-
-//   }
-//   console.log(unsavedNutrition)
 
 
 useEffect(()=>{
@@ -804,7 +672,7 @@ const handleButtonSaveChanges = async() =>{
     setIsQuantityUpdated(false)
     setQuantityChangedValues({})
     setRefreshStatus(res.data)
-    setUnsavedNutrition({})
+    // setUnsavedNutrition({})
   }
   setAnimation(true)
   
@@ -873,29 +741,213 @@ const getPaidStatus = ()=>{
   //   }
   // },[])
 
+  const handleAddMeal = async() =>{
+    setAnimation(false)
+
+    let {food_id,food_name,serving,serveUnit,calories,carbs,protein,fat,foodimg,customServing,vitaminC,vitaminD,iron} = USDACurrentDetails
+          if((serving =='Custom'&& !customServing) || (serving!='Custom' && !serving)){
+            alert("Please Enter the serving")
+          }
+          else{
+            if(customServing){
+               carbs = (USDACurrentDetails.carbs/customServing)*100
+               fat = (USDACurrentDetails.fat/customServing)*100
+               protein = (USDACurrentDetails.protein/customServing)*100
+               calories = (USDACurrentDetails.calories/customServing)*100
+               vitaminC = (USDACurrentDetails.vitaminC/customServing)*100
+               vitaminD = (USDACurrentDetails.vitaminD/customServing)*100
+               iron = (USDACurrentDetails.iron/customServing)*100
+
+               
+              // setUSDACurrentDetails(...USDACurrentDetails,carbs,fat,calories,protein)
+            }
+            //serving.split(' ').length>0
+            else if(serveUnit=='serving'){
+              carbs = USDACurrentDetails.carbs/serving
+              fat = USDACurrentDetails.fat/serving
+              protein = USDACurrentDetails.protein/serving
+              calories = USDACurrentDetails.calories/serving
+              vitaminC = USDACurrentDetails.vitaminC/serving
+              vitaminD = USDACurrentDetails.vitaminD/serving
+              iron = USDACurrentDetails.iron/serving
+              quantity = serving
+            }
+            else if(serving.split(' ').length==1){
+              carbs = (USDACurrentDetails.carbs/serving)*100
+              fat = (USDACurrentDetails.fat/serving)*100
+              protein = (USDACurrentDetails.protein/serving)*100
+              calories = (USDACurrentDetails.calories/serving)*100
+              vitaminC = (USDACurrentDetails.vitaminC/serving)*100
+              vitaminD = (USDACurrentDetails.vitaminD/serving)*100
+              iron = (USDACurrentDetails.iron/serving)*100
+            }
+            else{
+              alert('Couldnot calculate values')
+            }
+            console.log('Calories sent',calories)
+
+          console.log('Mealtime : ',mealTime)
+          console.log('food id:',food_id)
+          const reqBody = new FormData()
+          reqBody.append('food_id',food_id)
+          reqBody.append('food_name',food_name)
+          reqBody.append('calories',calories)
+          reqBody.append('serving',serving)
+          reqBody.append('serveUnit',serveUnit)
+          reqBody.append('protein',protein)
+          reqBody.append('fat',fat)
+          reqBody.append('carbs',carbs)
+          reqBody.append('mealtime',mealTime)
+          reqBody.append('date',userDate)
+          reqBody.append('customServing',customServing)
+          reqBody.append('vitaminC',vitaminC)
+          reqBody.append('vitaminD',vitaminD)
+          reqBody.append('iron',iron)
+          reqBody.append('quantity',1)
+
+          if(foodimg instanceof File){
+            console.log('Instance of file')
+            reqBody.append('foodimg',foodimg)
+          }
+          else{
+            reqBody.append('foodimg',foodimg)
+          }
+
+          console.log(reqBody)
+
+
+          const token= sessionStorage.getItem('token')
+          console.log(token)
+            const reqHeader = {
+            "Content-type": "multipart/form-data",
+           "Authorization": `Bearer ${token}`,
+          };
+      
+          const result = await EditUserMealApi('edit',reqBody,reqHeader)          
+          console.log("Edit user meal",result)
+          if(result.status == 200){
+              setRefreshStatus(result)
+              // toast.success(`Added meal to ${mealTime}`)
+              alert('Added meal successfully')
+              sessionStorage.setItem('UsermealsToday',JSON.stringify(result.data))
+              setUserMeals(JSON.parse(sessionStorage.getItem('UsermealsToday')))
+              console.log("Preview image",previewImg)
+              if(previewImg)
+                {
+                 const reqbod = new FormData()
+                 reqbod.append('fdcId',FDCid)
+                 reqbod.append('foodimg',USDACurrentDetails.foodimg)  
+                  
+                 const res = await AddUSDAEditedImageApi(reqbod,reqHeader)
+                 console.log("changedimage",res)
+                if(res.status==200){
+                console.log('Updated user changedImage')
+                // const obj = JSON.parse(sessionStorage.getItem('existingUser'))
+                // obj.changedImages = 
+                console.log(res.data.existingUser)
+                sessionStorage.setItem('existingUser',JSON.stringify(res.data.existingUser))
+              }
+            }
+            setSearchInnateList([])
+            setSearchlist([])
+            setInputValue('')
+            setShowFoodClick(false)
+            setUSDACurrentDetails({
+              food_id:'',
+              food_name:'',
+              serving:'',
+              serveUnit:'',
+              calories:'',
+              protein:'',
+              fat:'',
+              carbs:'',
+              foodimg:''
+            })
+              setaddFood(false)
+              setAnimation(true)
+
+
+
+          }
+          else{
+            alert('Oops something went wrong')
+            setSearchInnateList([])
+            setSearchlist([])
+            setInputValue('')
+            setShowFoodClick(false)
+            setUSDACurrentDetails({
+              food_id:'',
+              food_name:'',
+              serving:'',
+              serveUnit:'',
+              calories:'',
+              protein:'',
+              fat:'',
+              carbs:'',
+              foodimg:''
+            })
+              setaddFood(false)
+              setAnimation(true)
+          }
+
+
+        }
+
+    
+
+  }
+
+  const ConditionNutrientCalculator = (index,item,nutrient)=>{
+    let tempNutrition = item[nutrient]
+    if(item.customServing){
+        tempNutrition = (tempNutrition*item.customServing)/100
+    }
+    else if(item.serveUnit=='serving'){
+        tempNutrition = tempNutrition*item.serving
+    }
+    else{
+        tempNutrition = (tempNutrition*item.serving)/100
+    }
+
+    if(Object.keys(quantityChangedValues).length>0){
+        tempNutrition = (tempNutrition)*(quantityChangedValues[item.mealtime][index].quantity*1)
+        return tempNutrition
+    }
+    return tempNutrition*item.quantity
+  }
+
   const getCurrentGoalValues = () =>{
-    console.log(quantityChangedValues)
+    
       let calories = 0;
     let protein = 0;
     let fats = 0;
       let carbs = 0;
-    for(let x in quantityChangedValues){
+      const data = sessionStorage.getItem('UsermealsToday')
+      const searchList = data?(Object.keys(quantityChangedValues).length>0?quantityChangedValues:JSON.parse(data)):{}
+      console.log(searchList,JSON.parse(data))
+
+    if(Object.keys(searchList).length>0)
+    {  
+      for(let x in searchList){
       if(x=='breakfast'|| x=='lunch'||x=='dinner'|| x=='snacks'){
-        if(quantityChangedValues[x].length>0){
-          quantityChangedValues[x].forEach(item=>{
-            calories+=(item.calories!=='--'?item.calories:0)*(item.quantity*1)
-            protein+=(item.protein!=='--'?item.protein:0)*(item.quantity*1)
-            fats+=(item.fat!=='--'?item.fat:0)*(item.quantity*1)
-            carbs+=(item.carbs!=='--'?item.carbs:0)*(item.quantity*1)
+        if(searchList[x].length>0){
+          searchList[x].forEach((item,index)=>{
+            console.log('Hello')
+            calories+=(ConditionNutrientCalculator(index,item,'calories')*1)
+            protein+=(ConditionNutrientCalculator(index,item,'protein')*1)
+            fats+=(ConditionNutrientCalculator(index,item,'fat')*1)
+            carbs+=(ConditionNutrientCalculator(index,item,'carbs')*1)
 
           }
             )
 
         }
       }
+      }
     }
     let objdata = {calories:calories.toFixed(2)*1,protein:protein.toFixed(2)*1,fats:fats.toFixed(2)*1,carbs:carbs.toFixed(2)*1};
-    setUnsavedNutrition(objdata)
+    setCurrentNutrition(objdata)
+    console.log('ObjData',objdata)
     console.log(calories,protein,fats,carbs)
 
 
@@ -903,13 +955,17 @@ const getPaidStatus = ()=>{
 
 
 const [userMeals,setUserMeals] = useState({})
+useEffect(()=>(
+  getCurrentGoalValues()
+),[quantityChangedValues,refreshStatus])
+
 //main useEffect
   useEffect(() => {
     if (sessionStorage.getItem("token")) {
       console.log("Inside Nutrition page");
       getGoals();
-      getCurrentGoalValues()
-      getChangedImages()
+      
+      getChangedImages();
       adjustRightDivHeight();
       getPaidStatus();
       let data = sessionStorage.getItem("UsermealsToday")
@@ -919,6 +975,8 @@ const [userMeals,setUserMeals] = useState({})
         setUserMeals(data)
         setAnimation(true)
       }
+ 
+
       window.addEventListener("resize", adjustRightDivHeight);
     
     
@@ -928,8 +986,6 @@ const [userMeals,setUserMeals] = useState({})
     }
     return () => {
       window.removeEventListener("resize", adjustRightDivHeight);
-
-
     };
  
   }, [refreshStatus]);
@@ -995,36 +1051,36 @@ const [userMeals,setUserMeals] = useState({})
               <div className="w-full block md:hidden bg-[#2F4858] text-white px-6 py-8 rounded-b-md">
                 <div className="flex justify-between mb-1">
                   <p className="text-lg italic">Calories</p>
-                  <p className="text-lg ">{JSON.parse(sessionStorage.getItem('usernutrition'))?(Object.keys(quantityChangedValues).length?unsavedNutrition.calories:JSON.parse(sessionStorage.getItem('usernutrition')).calories):0} kcal</p>
+                  <p className="text-lg ">{currentNutrition.calories} kcal</p>
                 </div>
-                <StatusBar animation={animation} small={true} curr={JSON.parse(sessionStorage.getItem('usernutrition'))?(Object.keys(quantityChangedValues).length?unsavedNutrition.calories:JSON.parse(sessionStorage.getItem('usernutrition')).calories):0} total={goals.calories} />
+                <StatusBar animation={animation} small={true} curr={currentNutrition.calories} total={goals.calories} />
                 <div style={{ height: "10px" }}></div>
                 <div className="flex justify-between mb-1 ">
                   <p className="text-lg italic">Protein</p>
-                  <p className="text-lg">{JSON.parse(sessionStorage.getItem('usernutrition'))?(Object.keys(quantityChangedValues).length?unsavedNutrition.protein:JSON.parse(sessionStorage.getItem('usernutrition')).protein):0} g</p>
+                  <p className="text-lg">{currentNutrition.protein} g</p>
                 </div>
-                <StatusBar animation={animation} small={true} curr={JSON.parse(sessionStorage.getItem('usernutrition'))?(Object.keys(quantityChangedValues).length?unsavedNutrition.protein:JSON.parse(sessionStorage.getItem('usernutrition')).protein):0} total={goals.protein} />
+                <StatusBar animation={animation} small={true} curr={currentNutrition.protein} total={goals.protein} />
                 <div style={{ height: "10px" }}></div>
                 <div className="flex justify-between mb-1">
                   <p className="text-lg italic">Carbs</p>
-                  <p className="text-lg">{JSON.parse(sessionStorage.getItem('usernutrition'))?(Object.keys(quantityChangedValues).length?unsavedNutrition.carbs:JSON.parse(sessionStorage.getItem('usernutrition')).carbs):0} g</p>
+                  <p className="text-lg">{currentNutrition.carbs} g</p>
                 </div>
-                <StatusBar animation={animation} small={true} curr={JSON.parse(sessionStorage.getItem('usernutrition'))?(Object.keys(quantityChangedValues).length?unsavedNutrition.carbs:JSON.parse(sessionStorage.getItem('usernutrition')).carbs):0} total={goals.carbs} />
+                <StatusBar animation={animation} small={true} curr={currentNutrition.carbs} total={goals.carbs} />
                 <div style={{ height: "10px" }}></div>
                 <div className="flex justify-between mb-1">
                   <p className="text-lg italic">Fats</p>
-                  <p className="text-lg">{JSON.parse(sessionStorage.getItem('usernutrition'))?(Object.keys(quantityChangedValues).length?unsavedNutrition.fats:JSON.parse(sessionStorage.getItem('usernutrition')).fats):0} g</p>
+                  <p className="text-lg">{currentNutrition.fats} g</p>
                 </div>
-                <StatusBar animation={animation} small={true} curr={JSON.parse(sessionStorage.getItem('usernutrition'))?(Object.keys(quantityChangedValues).length?unsavedNutrition.fats:JSON.parse(sessionStorage.getItem('usernutrition')).fats):0} total={goals.fats} />
+                <StatusBar animation={animation} small={true} curr={currentNutrition.fats} total={goals.fats} />
                 <div style={{ height: "10px" }}></div>
               </div>
 
               <div className="mx-auto  border w-full md:w-[60%] hidden md:block content-container  md:col-start-2  md:row-start-1  md:row-span-3 bg-[#2F4858] text-white px-3 py-5 rounded-md">
                 <h3 className="text-sm">Calories intake today</h3>
                 <h1 className="text-[3.75vw] mb-6">
-                {JSON.parse(sessionStorage.getItem('usernutrition'))?(Object.keys(quantityChangedValues).length?unsavedNutrition.calories:JSON.parse(sessionStorage.getItem('usernutrition')).calories):0}<span className="text-lg ms-1">kcal</span>
+                {currentNutrition.calories}<span className="text-lg ms-1">kcal</span>
                 </h1>
-                <StatusBar animation={animation} curr={JSON.parse(sessionStorage.getItem('usernutrition'))?(Object.keys(quantityChangedValues).length?unsavedNutrition.calories:JSON.parse(sessionStorage.getItem('usernutrition')).calories):1} total={goals.calories} />
+                <StatusBar animation={animation} curr={currentNutrition.calories} total={goals.calories} />
                 <p className="float-end text-[1.1vw] mt-2">
                 Goal: {goals.calories}kcal
                 </p>
@@ -1032,21 +1088,21 @@ const [userMeals,setUserMeals] = useState({})
               <div className="mx-auto border px-6 py-6 w-full md:w-[90%] hidden md:block justify-content-center content-container md:col-start-3 md:row-start-2 bg-[#2F4858] text-white rounded-md">
                 <div className="flex justify-between mb-1 ">
                   <p className="text-sm">Protein</p>
-                  <p className="text-sm">{JSON.parse(sessionStorage.getItem('usernutrition'))?(Object.keys(quantityChangedValues).length?unsavedNutrition.protein:JSON.parse(sessionStorage.getItem('usernutrition')).protein):0} g</p>
+                  <p className="text-sm">{currentNutrition.protein} g</p>
                 </div>
-                <StatusBar animation={animation} small={true} curr={JSON.parse(sessionStorage.getItem('usernutrition'))?(Object.keys(quantityChangedValues).length?unsavedNutrition.protein:JSON.parse(sessionStorage.getItem('usernutrition')).protein):1} total={goals.protein} />
+                <StatusBar animation={animation} small={true} curr={currentNutrition.protein} total={goals.protein} />
                 <div style={{ height: "10px" }}></div>
                 <div className="flex justify-between mb-1">
                   <p className="text-sm">Carbs</p>
-                  <p className="text-sm">{JSON.parse(sessionStorage.getItem('usernutrition'))?(Object.keys(quantityChangedValues).length?unsavedNutrition.carbs:JSON.parse(sessionStorage.getItem('usernutrition')).carbs):0} g</p>
+                  <p className="text-sm">{currentNutrition.carbs} g</p>
                 </div>
-                <StatusBar animation={animation} small={true} curr={JSON.parse(sessionStorage.getItem('usernutrition'))?(Object.keys(quantityChangedValues).length?unsavedNutrition.carbs:JSON.parse(sessionStorage.getItem('usernutrition')).carbs):1} total={goals.carbs} />
+                <StatusBar animation={animation} small={true} curr={currentNutrition.carbs} total={goals.carbs} />
                 <div style={{ height: "10px" }}></div>
                 <div className="flex justify-between mb-1">
                   <p className="text-sm">Fats</p>
-                  <p className="text-sm">{JSON.parse(sessionStorage.getItem('usernutrition'))?(Object.keys(quantityChangedValues).length?unsavedNutrition.fats:JSON.parse(sessionStorage.getItem('usernutrition')).fats):0} g</p>
+                  <p className="text-sm">{currentNutrition.fats} g</p>
                 </div>
-                <StatusBar animation={animation} small={true} curr={JSON.parse(sessionStorage.getItem('usernutrition'))?(Object.keys(quantityChangedValues).length?unsavedNutrition.fats:JSON.parse(sessionStorage.getItem('usernutrition')).fats):1} total={goals.fats} />
+                <StatusBar animation={animation} small={true} curr={currentNutrition.fats} total={goals.fats} />
                 <div style={{ height: "10px" }}></div>
               </div>
             </div>
@@ -1069,10 +1125,59 @@ const [userMeals,setUserMeals] = useState({})
           </div> */}
          
          <div className="added-meals w-100 mt-[5rem] grid grid-cols-1 md:grid-cols-3 gap-x-[3rem]">
-              <Diet mealTime = {mealTime} quantityChangedValues={quantityChangedValues} setQuantityChangedValues = {setQuantityChangedValues} setIsQuantityUpdated={setIsQuantityUpdated} setAnimation = {setAnimation} setaddFood = {setaddFood} setRefreshStatus={setRefreshStatus} setMealTime={setMealTime} userMeals={userMeals.breakfast??[]} head={"Breakfast"} />
-              <Diet mealTime = {mealTime} quantityChangedValues={quantityChangedValues} setQuantityChangedValues = {setQuantityChangedValues} setIsQuantityUpdated={setIsQuantityUpdated} setAnimation = {setAnimation} setaddFood = {setaddFood} setRefreshStatus={setRefreshStatus} head={"Lunch"}  userMeals={userMeals.lunch??[]} setMealTime={setMealTime}/>
-              <Diet mealTime = {mealTime} quantityChangedValues={quantityChangedValues} setQuantityChangedValues = {setQuantityChangedValues} setIsQuantityUpdated={setIsQuantityUpdated} setAnimation = {setAnimation} setaddFood = {setaddFood} setRefreshStatus={setRefreshStatus} head={"Dinner"}  userMeals={userMeals.dinner??[]} setMealTime={setMealTime} />
-              <Diet mealTime = {mealTime} quantityChangedValues={quantityChangedValues} setQuantityChangedValues = {setQuantityChangedValues} setIsQuantityUpdated={setIsQuantityUpdated} setAnimation = {setAnimation} setaddFood = {setaddFood} setRefreshStatus={setRefreshStatus} head={"Snacks"}  userMeals={userMeals.snacks??[]} setMealTime={setMealTime} />
+              <Diet 
+              mealTime = {mealTime} 
+              isQuantityUpdated={isQuantityUpdated} 
+              quantityChangedValues={quantityChangedValues} 
+              setQuantityChangedValues = {setQuantityChangedValues}
+              setIsQuantityUpdated={setIsQuantityUpdated}
+              setAnimation = {setAnimation}
+              setaddFood = {setaddFood}
+              setRefreshStatus={setRefreshStatus}
+              setMealTime={setMealTime}
+              userMeals={userMeals.breakfast??[]}
+              head={"Breakfast"}
+              ConditionNutrientCalculator={ConditionNutrientCalculator}/>
+              <Diet 
+               mealTime = {mealTime}
+               isQuantityUpdated={isQuantityUpdated} 
+               quantityChangedValues={quantityChangedValues}
+               setQuantityChangedValues = {setQuantityChangedValues}
+               setIsQuantityUpdated={setIsQuantityUpdated}
+               setAnimation = {setAnimation}
+               setaddFood = {setaddFood}
+               setRefreshStatus={setRefreshStatus}
+               head={"Lunch"}
+                userMeals={userMeals.lunch??[]}
+               setMealTime={setMealTime}
+              ConditionNutrientCalculator={ConditionNutrientCalculator}
+              />
+              <Diet mealTime = {mealTime}
+               isQuantityUpdated={isQuantityUpdated} 
+               quantityChangedValues={quantityChangedValues}
+               setQuantityChangedValues = {setQuantityChangedValues}
+               setIsQuantityUpdated={setIsQuantityUpdated}
+               setAnimation = {setAnimation}
+               setaddFood = {setaddFood}
+               setRefreshStatus={setRefreshStatus}
+               head={"Dinner"}
+               userMeals={userMeals.dinner??[]}
+               setMealTime={setMealTime}
+               ConditionNutrientCalculator={ConditionNutrientCalculator}
+               />
+              <Diet mealTime = {mealTime}
+               isQuantityUpdated={isQuantityUpdated} 
+               quantityChangedValues={quantityChangedValues}
+               setQuantityChangedValues = {setQuantityChangedValues}
+               setIsQuantityUpdated={setIsQuantityUpdated}
+               setAnimation = {setAnimation}
+               setaddFood = {setaddFood}
+               setRefreshStatus={setRefreshStatus}
+               head={"Snacks"}
+               userMeals={userMeals.snacks??[]}
+               setMealTime={setMealTime}
+               ConditionNutrientCalculator={ConditionNutrientCalculator}
+               />
             </div>
 { !isPremium ? <div className=" flex justify-center mb-20">
           <button onClick={buyFunction} className="bg-[#ffb643] px-3 py-2 rounded shadow-lg border-[#616161]"><FontAwesomeIcon icon={faCrown} style={{color: "#fbf7f1"}} className="me-3 scale-125" />Get Detailed Nutrition Summary</button>
