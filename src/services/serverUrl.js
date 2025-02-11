@@ -1,1 +1,1 @@
-export const serverUrl = "http://localhost:4002"
+export const serverUrl = "https://nutrihealth-backend.onrender.com"
