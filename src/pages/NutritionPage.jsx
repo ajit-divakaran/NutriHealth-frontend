@@ -14,6 +14,7 @@ import { toast, ToastContainer } from "react-toastify";
 import { loadStripe } from '@stripe/stripe-js';
 import { faCrown } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import PremiumNutrition from "../components/PremiumNutrition";
 
 // import NutriData from "../components/NutriData";
 
@@ -191,14 +192,14 @@ const firstCalculate = (details,weight) =>{
   let newvitaminD = ''
   let newiron = ''
   console.log(details)
-  console.log(details.vitaminC.slice(0,-2))
+  console.log(details.vitaminC)
     if(weight && !(details.serveUnit=='serving') )
     { newCalories = ((details.calories*weight)/100).toFixed(2)
      newCarbs = ((details.carbs*weight)/100).toFixed(2)
      newFats = ((details.fat*weight)/100).toFixed(2)
      newProtein = ((details.protein*weight)/100).toFixed(2)
-     newvitaminC = ((details.vitaminC.slice(0,-2)*weight)/100).toFixed(2)
-     newvitaminD = ((details.vitaminD*weight)/100).toFixed(2)
+     newvitaminC = ((details.vitaminC*weight)/100).toFixed(2)
+     newvitaminD = ((details.vitaminD*weight*40)/100).toFixed(2)
      newiron = ((details.iron*weight)/100).toFixed(2)}
     
     if(details.serveUnit=='serving'){
@@ -260,11 +261,11 @@ const handleMeasures = (item) =>{
       
       foodimg:item.foodimg?`${serverUrl}/upload/${item.foodimg}`:(check!== -1?`${serverUrl}/upload/${isChangedImage[check].foodimg}` :await fetchPexelsData(item.description)),
 
-      vitaminC:item.vitaminC == 0? 0: item.vitaminC ?? (item.foodNutrients.find(x=>x.nutrientId==1104)?item.foodNutrients.filter(x=>x.nutrientId==1104)[0].value:'--')+'IU',//1104 unitName IU
+      vitaminC:(item.vitaminC == 0 )? 0: item.vitaminC ?? (item.foodNutrients && item.foodNutrients.find(x=>x.nutrientId==1162)?item.foodNutrients.filter(x=>x.nutrientId==1162)[0].value:0),//1162 unitName mg
 
-      vitaminD:item.vitaminD == 0? 0: item.vitaminD ?? (item.foodNutrients.find(x=>x.nutrientId==1114)?item.foodNutrients.filter(x=>x.nutrientId==1114)[0].value:'--')+'UG',//1114 UG
+      vitaminD:(item.vitaminD == 0 )? 0: item.vitaminD ?? (item.foodNutrients && item.foodNutrients.find(x=>x.nutrientId==1114)?item.foodNutrients.filter(x=>x.nutrientId==1114)[0].value:0),//1114 mcg
 
-      iron:item.iron == 0? 0: item.iron ?? (item.foodNutrients.find(x=>x.nutrientId==1089)?item.foodNutrients.filter(x=>x.nutrientId==1089)[0].value:'--')+'mg' //1089 unitName MG
+      iron:(item.iron == 0)? 0: item.iron ?? (item.foodNutrients && item.foodNutrients.find(x=>x.nutrientId==1089)?item.foodNutrients.filter(x=>x.nutrientId==1089)[0].value:0)//1089 unitName mg
     }
     console.log(typeof details.serving)
     console.log(details)
@@ -340,7 +341,11 @@ const [isLoading,setIsLoading] = useState(true)
     setPreviewImg(null)
     if(val.length){
       setIsLoading(true)
-    const pro1 = await GetSearchFoodsinAddrecipesApi(val)
+      const token = sessionStorage.getItem('token')
+      const reqHeader = {
+        "Content-Type":"application/json",
+        "Authorization":`Bearer ${token}`}
+    const pro1 = await GetSearchFoodsinAddrecipesApi(val,reqHeader)
     console.log(pro1.data)
     setSearchInnateList(pro1.data)
     const data = JSON.parse(sessionStorage.getItem('existingUser')).searchedfoods
@@ -357,6 +362,7 @@ const [isLoading,setIsLoading] = useState(true)
     const apidata = await FindUSDAFoodApi('Foundation',inputValue.trim());
    (apidata.data.foods.length)>0 && Foundation.push(...apidata.data.foods)
    console.log(Foundation)
+   console.log(apidata)
 
    if(apidata.data.aggregations.dataType.hasOwnProperty('SR Legacy')){
     console.log('Inside SR Legacy')
@@ -678,10 +684,10 @@ const handleButtonSaveChanges = async() =>{
   
 }
 
-
+console.log(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
 
 const buyFunction = async() =>{
-  const stripe = await loadStripe("pk_test_51QjegEF5juGM9lQ5w6Y5beFOaRWRY6FZhuNhbTe4Tzs4CWUkI2MS6VsamfuzFrkH5Hf7qPuPGkmbprmVoIHPv7xe00OPqp8kvF");
+  const stripe = await loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
     const body = {
         products:'Nutri Premium'
     }
@@ -745,41 +751,44 @@ const getPaidStatus = ()=>{
     setAnimation(false)
 
     let {food_id,food_name,serving,serveUnit,calories,carbs,protein,fat,foodimg,customServing,vitaminC,vitaminD,iron} = USDACurrentDetails
+    let quantity = 1 // for all cases except for user meals or serving meals
+    console.log('Servings',serving)
           if((serving =='Custom'&& !customServing) || (serving!='Custom' && !serving)){
             alert("Please Enter the serving")
           }
           else{
             if(customServing){
-               carbs = (USDACurrentDetails.carbs/customServing)*100
-               fat = (USDACurrentDetails.fat/customServing)*100
-               protein = (USDACurrentDetails.protein/customServing)*100
-               calories = (USDACurrentDetails.calories/customServing)*100
-               vitaminC = (USDACurrentDetails.vitaminC/customServing)*100
-               vitaminD = (USDACurrentDetails.vitaminD/customServing)*100
-               iron = (USDACurrentDetails.iron/customServing)*100
+               carbs = ((USDACurrentDetails.carbs/customServing)*100).toFixed(2)
+               fat = ((USDACurrentDetails.fat/customServing)*100).toFixed(2)
+               protein = ((USDACurrentDetails.protein/customServing)*100).toFixed(2)
+               calories = ((USDACurrentDetails.calories/customServing)*100).toFixed(2)
+               vitaminC = ((USDACurrentDetails.vitaminC/customServing)*100).toFixed(2)
+               vitaminD = ((USDACurrentDetails.vitaminD/customServing)*100).toFixed(2)
+               iron = ((USDACurrentDetails.iron/customServing)*100).toFixed(2)
 
                
-              // setUSDACurrentDetails(...USDACurrentDetails,carbs,fat,calories,protein)
+        
             }
-            //serving.split(' ').length>0
+           
             else if(serveUnit=='serving'){
-              carbs = USDACurrentDetails.carbs/serving
-              fat = USDACurrentDetails.fat/serving
-              protein = USDACurrentDetails.protein/serving
-              calories = USDACurrentDetails.calories/serving
-              vitaminC = USDACurrentDetails.vitaminC/serving
-              vitaminD = USDACurrentDetails.vitaminD/serving
-              iron = USDACurrentDetails.iron/serving
+              carbs = (USDACurrentDetails.carbs/serving).toFixed(2)
+              fat = (USDACurrentDetails.fat/serving).toFixed(2)
+              protein = (USDACurrentDetails.protein/serving).toFixed(2)
+              calories = (USDACurrentDetails.calories/serving).toFixed(2)
+              vitaminC = (USDACurrentDetails.vitaminC/serving).toFixed(2)
+              vitaminD = (USDACurrentDetails.vitaminD/serving).toFixed(2) 
+              iron = (USDACurrentDetails.iron/serving).toFixed(2) 
               quantity = serving
+              serving=1
             }
-            else if(serving.split(' ').length==1){
-              carbs = (USDACurrentDetails.carbs/serving)*100
-              fat = (USDACurrentDetails.fat/serving)*100
-              protein = (USDACurrentDetails.protein/serving)*100
-              calories = (USDACurrentDetails.calories/serving)*100
-              vitaminC = (USDACurrentDetails.vitaminC/serving)*100
-              vitaminD = (USDACurrentDetails.vitaminD/serving)*100
-              iron = (USDACurrentDetails.iron/serving)*100
+            else if(serving && serveUnit!=='serving'){
+              carbs = ((USDACurrentDetails.carbs/serving)*100).toFixed(2)
+              fat = ((USDACurrentDetails.fat/serving)*100).toFixed(2)
+              protein = ((USDACurrentDetails.protein/serving)*100).toFixed(2)
+              calories = ((USDACurrentDetails.calories/serving)*100).toFixed(2)
+              vitaminC = ((USDACurrentDetails.vitaminC/serving)*100).toFixed(2)
+              vitaminD = ((USDACurrentDetails.vitaminD/serving)*100).toFixed(2)
+              iron = ((USDACurrentDetails.iron/serving)*100).toFixed(2)
             }
             else{
               alert('Couldnot calculate values')
@@ -803,7 +812,7 @@ const getPaidStatus = ()=>{
           reqBody.append('vitaminC',vitaminC)
           reqBody.append('vitaminD',vitaminD)
           reqBody.append('iron',iron)
-          reqBody.append('quantity',1)
+          reqBody.append('quantity',quantity)
 
           if(foodimg instanceof File){
             console.log('Instance of file')
@@ -916,12 +925,17 @@ const getPaidStatus = ()=>{
     return tempNutrition*item.quantity
   }
 
+
+// runs every time when refreshed and as well as when change is introduced
   const getCurrentGoalValues = () =>{
     
       let calories = 0;
     let protein = 0;
     let fats = 0;
       let carbs = 0;
+      let vitaminC=0
+      let vitaminD=0
+      let iron=0
       const data = sessionStorage.getItem('UsermealsToday')
       const searchList = data?(Object.keys(quantityChangedValues).length>0?quantityChangedValues:JSON.parse(data)):{}
       console.log(searchList,JSON.parse(data))
@@ -938,6 +952,12 @@ const getPaidStatus = ()=>{
             fats+=(ConditionNutrientCalculator(index,item,'fat')*1)
             carbs+=(ConditionNutrientCalculator(index,item,'carbs')*1)
 
+            if(item.vitaminC!=undefined && item.vitaminD!=undefined && item.iron!=undefined){
+              vitaminC+=(ConditionNutrientCalculator(index,item,'vitaminC')*1)
+              vitaminD+=(ConditionNutrientCalculator(index,item,'vitaminD')*1)
+              iron+=(ConditionNutrientCalculator(index,item,'iron')*1)
+            }
+
           }
             )
 
@@ -945,10 +965,10 @@ const getPaidStatus = ()=>{
       }
       }
     }
-    let objdata = {calories:calories.toFixed(2)*1,protein:protein.toFixed(2)*1,fats:fats.toFixed(2)*1,carbs:carbs.toFixed(2)*1};
+    let objdata = {calories:calories.toFixed(2)*1,protein:protein.toFixed(2)*1,fats:fats.toFixed(2)*1,carbs:carbs.toFixed(2)*1,vitaminC:vitaminC.toFixed(2),vitaminD:vitaminD.toFixed(2),iron:iron.toFixed(2)};
     setCurrentNutrition(objdata)
     console.log('ObjData',objdata)
-    console.log(calories,protein,fats,carbs)
+    console.log(calories,protein,fats,carbs,"VitaminC",vitaminC,vitaminD,iron)
 
 
   }
@@ -1182,16 +1202,7 @@ useEffect(()=>(
 { !isPremium ? <div className=" flex justify-center mb-20">
           <button onClick={buyFunction} className="bg-[#ffb643] px-3 py-2 rounded shadow-lg border-[#616161]"><FontAwesomeIcon icon={faCrown} style={{color: "#fbf7f1"}} className="me-3 scale-125" />Get Detailed Nutrition Summary</button>
           </div>:
-          <div>
-            <h1>Micronutrients</h1>
-            <hr className="mb-4 border-[1px] border-slate-400 " />
-                   <div className="flex justify-between mb-1">
-                  <p className="text-sm">Fats</p>
-                  <p className="text-sm">{JSON.parse(sessionStorage.getItem('usernutrition'))?(Object.keys(quantityChangedValues).length?unsavedNutrition.fats:JSON.parse(sessionStorage.getItem('usernutrition')).fats):0} g</p>
-                </div>
-                <StatusBar animation={animation} small={true} curr={JSON.parse(sessionStorage.getItem('usernutrition'))?(Object.keys(quantityChangedValues).length?unsavedNutrition.fats:JSON.parse(sessionStorage.getItem('usernutrition')).fats):1} total={goals.fats} />
-                <div style={{ height: "10px" }}></div>
-            </div>}
+        <PremiumNutrition currentNutrition={currentNutrition} animation={animation} setAnimation={setAnimation}/>}
           </div>
         </div>
       ) : (

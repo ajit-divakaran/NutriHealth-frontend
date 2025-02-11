@@ -16,6 +16,7 @@ const Diet = ({mealTime,isQuantityUpdated,quantityChangedValues,setQuantityChang
     
     // const [editOpen, setEditOpen] = useState(false)
     const handleAdd = () =>{
+        setQuantityChangedValues({})
         setaddFood(true)
         let mealtime = head.charAt(0).toLowerCase() + head.slice(1)
         console.log(mealtime)
@@ -26,6 +27,7 @@ const Diet = ({mealTime,isQuantityUpdated,quantityChangedValues,setQuantityChang
     }
 
     const handleMealItemClose =async(item) =>{
+        
         setAnimation(false)
         let mealtime = head.charAt(0).toLowerCase() + head.slice(1)
         console.log(mealtime)
@@ -131,23 +133,23 @@ const Diet = ({mealTime,isQuantityUpdated,quantityChangedValues,setQuantityChang
         updateTempUMeals(input,item)
     }
 
-    const handleCal = (item,index) =>{
-        let tempCal = item.calories
-        if(item.customServing){
-            tempCal = (tempCal*item.customServing)/100
-        }
-        else if(item.serveUnit=='serving'){
-            tempCal = tempCal*item.serving
-        }
-        else{
-            tempCal = (tempCal*item.serving)/100
-        }
+    // const handleCal = (item,index) =>{
+    //     let tempCal = item.calories
+    //     if(item.customServing){
+    //         tempCal = (tempCal*item.customServing)/100
+    //     }
+    //     else if(item.serveUnit=='serving'){
+    //         tempCal = tempCal*item.serving
+    //     }
+    //     else{
+    //         tempCal = (tempCal*item.serving)/100
+    //     }
 
-        if(Object.keys(quantityChangedValues).length>0){
-            tempCal = ((tempCal*item.customServing)/100)*(quantityChangedValues[item.mealtime][index].quantity*1)
-        }
-        return tempCal + 'kcal'
-    }
+    //     if(Object.keys(quantityChangedValues).length>0){
+    //         tempCal = ((tempCal*item.customServing)/100)*(quantityChangedValues[item.mealtime][index].quantity*1)
+    //     }
+    //     return tempCal + 'kcal'
+    // }
 
     // useEffect(()=>{
     //     let mealtime = head.charAt(0).toLowerCase() + head.slice(1)

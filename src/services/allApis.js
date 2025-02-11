@@ -18,8 +18,8 @@ export const GetAllFoodsApi = async(reqheader) =>{
     return await commonApi('GET',`${serverUrl}/user-recipes`,"",reqheader)
 }
 
-export const GetSearchFoodsinAddrecipesApi = async(searchkey) =>{
-    return await commonApi('GET',`${serverUrl}/all-foods?search=${searchkey}`)
+export const GetSearchFoodsinAddrecipesApi = async(searchkey,reqheader) =>{
+    return await commonApi('GET',`${serverUrl}/all-foods?search=${searchkey}`,"",reqheader)
 }
 export const AddUserRecipeApi = async(reqBody,reqheader) =>{
     return await commonApi('POST',`${serverUrl}/add-new-recipe`,reqBody,reqheader)

@@ -8,7 +8,11 @@ const PageNotFound = () => {
   useEffect(()=>{
 
     toast.warning('Redirecting to Home page')
-    setTimeout(()=>navigate('/'),9650)
+    const timer = setTimeout(()=>navigate('/'),9650)
+  
+    return()=>{
+    clearTimeout(timer)
+  }
   },[])
   return (
     <div className='flex justify-center' style={{boxSizing:'border-box'}}>
