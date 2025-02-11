@@ -684,7 +684,7 @@ const handleButtonSaveChanges = async() =>{
   
 }
 
-console.log(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
+console.log('frontend stripe',import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
 
 const buyFunction = async() =>{
   const stripe = await loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
